@@ -8,7 +8,19 @@ from app.core import security
 from app.core.config import settings
 from app.infrastructure.database.session import SessionLocal
 from app.infrastructure.repositories.user_repository_impl import UserRepositoryImpl
+from app.infrastructure.repositories.project_repository_impl import ProjectRepositoryImpl
+from app.infrastructure.repositories.blog_repository_impl import BlogRepositoryImpl
+from app.infrastructure.repositories.course_repository_impl import CourseRepositoryImpl
+from app.infrastructure.repositories.education_repository_impl import EducationRepositoryImpl
+from app.infrastructure.repositories.experience_repository_impl import ExperienceRepositoryImpl
+from app.infrastructure.repositories.analytics_repository_impl import AnalyticsRepositoryImpl
 from app.services.user_service import UserService
+from app.services.project_service import ProjectService
+from app.services.blog_service import BlogService
+from app.services.course_service import CourseService
+from app.services.education_service import EducationService
+from app.services.experience_service import ExperienceService
+from app.services.analytics_service import AnalyticsService
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -53,3 +65,61 @@ def require_csrf(request: Request) -> None:
 	csrf_header = request.headers.get(settings.CSRF_HEADER_NAME)
 	if not csrf_cookie or not csrf_header or csrf_cookie != csrf_header:
 		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token invalid")
+
+
+# ============================================================================
+# Content Domain Dependencies
+# ============================================================================
+
+# Project dependencies
+def get_project_repository(db: Session = Depends(get_db)) -> ProjectRepositoryImpl:
+	return ProjectRepositoryImpl(db)
+
+
+def get_project_service(repo: ProjectRepositoryImpl = Depends(get_project_repository)) -> ProjectService:
+	return ProjectService(repo)
+
+
+# Blog dependencies
+def get_blog_repository(db: Session = Depends(get_db)) -> BlogRepositoryImpl:
+	return BlogRepositoryImpl(db)
+
+
+def get_blog_service(repo: BlogRepositoryImpl = Depends(get_blog_repository)) -> BlogService:
+	return BlogService(repo)
+
+
+# Course dependencies
+def get_course_repository(db: Session = Depends(get_db)) -> CourseRepositoryImpl:
+	return CourseRepositoryImpl(db)
+
+
+def get_course_service(repo: CourseRepositoryImpl = Depends(get_course_repository)) -> CourseService:
+	return CourseService(repo)
+
+
+# Education dependencies
+def get_education_repository(db: Session = Depends(get_db)) -> EducationRepositoryImpl:
+	return EducationRepositoryImpl(db)
+
+
+def get_education_service(repo: EducationRepositoryImpl = Depends(get_education_repository)) -> EducationService:
+	return EducationService(repo)
+
+
+# Experience dependencies
+def get_experience_repository(db: Session = Depends(get_db)) -> ExperienceRepositoryImpl:
+	return ExperienceRepositoryImpl(db)
+
+
+def get_experience_service(repo: ExperienceRepositoryImpl = Depends(get_experience_repository)) -> ExperienceService:
+	return ExperienceService(repo)
+
+
+# Analytics dependencies
+def get_analytics_repository(db: Session = Depends(get_db)) -> AnalyticsRepositoryImpl:
+	return AnalyticsRepositoryImpl(db)
+
+
+def get_analytics_service(repo: AnalyticsRepositoryImpl = Depends(get_analytics_repository)) -> AnalyticsService:
+	return AnalyticsService(repo)

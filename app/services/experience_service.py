@@ -1,0 +1,143 @@
+"""
+Experience service containing business logic for experience domain.
+"""
+import re
+import unicodedata
+from typing import Optional
+
+from app.domain.entities.experience import Experience
+from app.domain.repositories.experience_repository import ExperienceRepository
+
+
+class ExperienceService:
+	def __init__(self, repository: ExperienceRepository) -> None:
+		self.repository = repository
+
+	def _generate_slug(self, title: str) -> str:
+		"""Generate URL-friendly slug from title"""
+		slug = unicodedata.normalize("NFKD", title.lower())
+		slug = slug.encode("ascii", "ignore").decode("ascii")
+		slug = re.sub(r"[^a-z0-9]+", "-", slug)
+		slug = slug.strip("-")
+		slug = re.sub(r"-+", "-", slug)
+		return slug
+
+	def _ensure_unique_slug(self, slug: str, exclude_id: Optional[int] = None) -> str:
+		"""Ensure slug is unique by appending number if necessary"""
+		original_slug = slug
+		counter = 1
+		while self.repository.slug_exists(slug, exclude_id):
+			slug = f"{original_slug}-{counter}"
+			counter += 1
+		return slug
+
+	def create_experience(
+		self,
+		title: str,
+		slug: Optional[str] = None,
+		description: Optional[str] = None,
+		content: Optional[str] = None,
+		images: Optional[list[str]] = None,
+		metadata: Optional[dict] = None,
+		visible: bool = True,
+		order: int = 0,
+	) -> Experience:
+		if not slug:
+			slug = self._generate_slug(title)
+
+		slug = self._ensure_unique_slug(slug)
+
+		return self.repository.create(
+			title=title,
+			slug=slug,
+			description=description,
+			content=content,
+			images=images,
+			metadata=metadata,
+			visible=visible,
+			order=order,
+		)
+
+	def update_experience(
+		self,
+		experience_id: int,
+		title: Optional[str] = None,
+		slug: Optional[str] = None,
+		description: Optional[str] = None,
+		content: Optional[str] = None,
+		images: Optional[list[str]] = None,
+		metadata: Optional[dict] = None,
+		visible: Optional[bool] = None,
+		order: Optional[int] = None,
+	) -> Optional[Experience]:
+		existing = self.repository.get_by_id(experience_id)
+		if not existing:
+			return None
+
+		if slug and slug != existing.slug:
+			if self.repository.slug_exists(slug, experience_id):
+				raise ValueError("slug_already_exists")
+
+		return self.repository.update(
+			experience_id=experience_id,
+			title=title,
+			slug=slug,
+			description=description,
+			content=content,
+			images=images,
+			metadata=metadata,
+			visible=visible,
+			order=order,
+		)
+
+	def delete_experience(self, experience_id: int, soft: bool = True) -> bool:
+		return self.repository.delete(experience_id, soft)
+
+	def restore_experience(self, experience_id: int) -> Optional[Experience]:
+		return self.repository.restore(experience_id)
+
+	def get_experience_by_id(self, experience_id: int) -> Optional[Experience]:
+		return self.repository.get_by_id(experience_id)
+
+	def get_experience_by_slug(self, slug: str) -> Optional[Experience]:
+		return self.repository.get_by_slug(slug)
+
+	def list_experiences(
+		self,
+		include_hidden: bool = False,
+		include_deleted: bool = False,
+		limit: Optional[int] = None,
+		offset: int = 0,
+	) -> tuple[list[Experience], int]:
+		"""Returns tuple of (experiences, total_count)"""
+		experiences = self.repository.list_all(
+			include_hidden=include_hidden,
+			include_deleted=include_deleted,
+			limit=limit,
+			offset=offset,
+		)
+		total = self.repository.count(
+			include_hidden=include_hidden,
+			include_deleted=include_deleted,
+		)
+		return experiences, total
+
+	def get_public_experience(self, slug: str) -> Optional[Experience]:
+		"""Get an experience only if it's published"""
+		experience = self.repository.get_by_slug(slug)
+		if experience and experience.is_published:
+			return experience
+		return None
+
+	def list_public_experiences(
+		self,
+		limit: Optional[int] = None,
+		offset: int = 0,
+	) -> tuple[list[Experience], int]:
+		"""List only published experiences"""
+		return self.list_experiences(
+			include_hidden=False,
+			include_deleted=False,
+			limit=limit,
+			offset=offset,
+		)
