@@ -147,3 +147,47 @@ class UserRepositoryImpl(UserRepository):
 		token.revoked = True
 		self.db.add(token)
 		self.db.commit()
+
+	def update_user(
+		self,
+		user_id: int,
+		full_name: Optional[str] = None,
+		bio: Optional[str] = None,
+		location: Optional[str] = None,
+		website: Optional[str] = None,
+		company: Optional[str] = None,
+		avatar_url: Optional[str] = None,
+	) -> Optional[User]:
+		user = self.db.query(UserModel).filter(UserModel.id == user_id).first()
+		if not user:
+			return None
+
+		# Solo actualizar los campos que no son None
+		if full_name is not None:
+			user.full_name = full_name
+		if bio is not None:
+			user.bio = bio
+		if location is not None:
+			user.location = location
+		if website is not None:
+			user.website = website
+		if company is not None:
+			user.company = company
+		if avatar_url is not None:
+			user.avatar_url = avatar_url
+
+		self.db.commit()
+		self.db.refresh(user)
+
+		return User(
+			id=user.id,
+			username=user.username,
+			email=user.email,
+			full_name=user.full_name,
+			bio=user.bio,
+			location=user.location,
+			website=user.website,
+			company=user.company,
+			avatar_url=user.avatar_url,
+			is_active=user.is_active,
+		)

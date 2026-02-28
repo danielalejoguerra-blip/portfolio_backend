@@ -20,6 +20,15 @@ class UserLogin(BaseModel):
 	password: str
 
 
+class UserUpdate(BaseModel):
+	full_name: Optional[str] = Field(None, max_length=255)
+	bio: Optional[str] = None
+	location: Optional[str] = Field(None, max_length=255)
+	website: Optional[str] = Field(None, max_length=500)
+	company: Optional[str] = Field(None, max_length=255)
+	avatar_url: Optional[str] = Field(None, max_length=500)
+
+
 class UserRead(BaseModel):
 	id: int
 	username: str

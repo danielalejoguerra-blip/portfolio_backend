@@ -154,7 +154,7 @@ def get_top_content(
 @router.get("/views-by-date", response_model=ViewsByDateResponse)
 def get_views_by_date(
 	days: int = Query(default=30, ge=1, le=365),
-	granularity: str = Query(default="day", regex="^(hour|day|week|month)$"),
+	granularity: str = Query(default="day", pattern="^(hour|day|week|month)$"),
 	_current_user=Depends(get_current_user),
 	service: AnalyticsService = Depends(get_analytics_service),
 ):

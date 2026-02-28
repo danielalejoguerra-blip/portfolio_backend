@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
-from app.api.deps import get_user_service, require_csrf
+from app.api.deps import get_current_user, get_user_service, require_csrf
 from app.core import security
 from app.core.config import settings
 from app.domain.schemas.user import UserCreate, UserLogin, UserRead
@@ -48,7 +48,7 @@ def _clear_auth_cookies(response: Response) -> None:
 	response.delete_cookie(key=settings.COOKIE_CSRF_NAME, domain=settings.COOKIE_DOMAIN, path=settings.COOKIE_PATH)
 
 
-@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_current_user), Depends(require_csrf)])
 def register_user(payload: UserCreate, service: UserService = Depends(get_user_service)):
 	try:
 		user = service.register_user(
@@ -78,6 +78,8 @@ def login_user(
 	response: Response,
 	service: UserService = Depends(get_user_service),
 ):
+	print("[login] email:", payload.email)
+	print("[login] password_length:", payload.password)
 	user = service.authenticate_user(payload.email, payload.password)
 	if not user:
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
