@@ -20,6 +20,7 @@ import app.infrastructure.database.models.education_model  # noqa: F401
 import app.infrastructure.database.models.experience_model  # noqa: F401
 import app.infrastructure.database.models.analytics_model  # noqa: F401
 import app.infrastructure.database.models.personal_info_model  # noqa: F401
+import app.infrastructure.database.models.skill_model  # noqa: F401
 
 config = context.config
 

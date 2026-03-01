@@ -9,6 +9,7 @@ from app.api.v1.endpoints import (
 	experience,
 	personal_info,
 	projects,
+	skills,
 	users,
 )
 
@@ -25,6 +26,7 @@ api_router.include_router(courses.router)
 api_router.include_router(education.router)
 api_router.include_router(experience.router)
 api_router.include_router(personal_info.router)
+api_router.include_router(skills.router)
 
 # Analytics
 api_router.include_router(analytics.router)

@@ -15,6 +15,7 @@ from app.infrastructure.repositories.education_repository_impl import EducationR
 from app.infrastructure.repositories.experience_repository_impl import ExperienceRepositoryImpl
 from app.infrastructure.repositories.analytics_repository_impl import AnalyticsRepositoryImpl
 from app.infrastructure.repositories.personal_info_repository_impl import PersonalInfoRepositoryImpl
+from app.infrastructure.repositories.skill_repository_impl import SkillRepositoryImpl
 from app.services.user_service import UserService
 from app.services.project_service import ProjectService
 from app.services.blog_service import BlogService
@@ -23,6 +24,7 @@ from app.services.education_service import EducationService
 from app.services.experience_service import ExperienceService
 from app.services.analytics_service import AnalyticsService
 from app.services.personal_info_service import PersonalInfoService
+from app.services.skill_service import SkillService
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -136,3 +138,12 @@ def get_personal_info_service(
 	repo: PersonalInfoRepositoryImpl = Depends(get_personal_info_repository),
 ) -> PersonalInfoService:
 	return PersonalInfoService(repo)
+
+
+# Skill dependencies
+def get_skill_repository(db: Session = Depends(get_db)) -> SkillRepositoryImpl:
+	return SkillRepositoryImpl(db)
+
+
+def get_skill_service(repo: SkillRepositoryImpl = Depends(get_skill_repository)) -> SkillService:
+	return SkillService(repo)
