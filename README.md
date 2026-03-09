@@ -147,6 +147,37 @@ back-end/
 
 - `GET /api/v1/users/me` - Obtener usuario actual
 
+### Analíticas (tracking desde frontend)
+
+- `POST /api/v1/analytics/track` - Registra evento personalizado
+- `POST /api/v1/analytics/pageview` - Registra vista de página
+
+## ⚡ Realtime Analytics (Socket.IO)
+
+Canal en tiempo real para dashboard admin de analíticas.
+
+- **Path Socket.IO:** `/{SOCKETIO_PATH}` (por defecto: `/socket.io`)
+- **Namespace:** `/analytics`
+- **Acceso:** solo usuarios autenticados por cookie `access_token`
+- **Escalado:** soporta múltiples instancias con Redis (`SOCKETIO_REDIS_URL`)
+
+### Eventos emitidos por el backend
+
+- `analytics:event` → último evento insertado
+- `analytics:summary` → resumen de analíticas (`days` configurable)
+- `analytics:top_content` → top de contenido (`days` y `limit` configurables)
+
+### Variables de entorno realtime
+
+```env
+SOCKETIO_PATH=socket.io
+SOCKETIO_NAMESPACE_ANALYTICS=/analytics
+SOCKETIO_ANALYTICS_ROOM=analytics_admin
+SOCKETIO_REDIS_URL=redis://localhost:6379/0
+ANALYTICS_REALTIME_DAYS=30
+ANALYTICS_REALTIME_TOP_LIMIT=10
+```
+
 ## 📝 Migraciones
 
 ### Crear nueva migración

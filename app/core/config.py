@@ -33,5 +33,13 @@ class Settings(BaseSettings):
 
 	BACKEND_CORS_ORIGINS: List[str] = []
 
+	SOCKETIO_PATH: str = "socket.io"
+	SOCKETIO_NAMESPACE_ANALYTICS: str = "/analytics"
+	SOCKETIO_ANALYTICS_ROOM: str = "analytics_admin"
+	SOCKETIO_REDIS_URL: Optional[str] = None
+
+	ANALYTICS_REALTIME_DAYS: int = 30
+	ANALYTICS_REALTIME_TOP_LIMIT: int = 10
+
 
 settings = Settings()

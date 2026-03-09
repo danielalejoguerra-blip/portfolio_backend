@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.infrastructure.realtime import mount_socketio
 
-app = FastAPI(title=settings.PROJECT_NAME)
+fastapi_app = FastAPI(title=settings.PROJECT_NAME)
 
 if settings.BACKEND_CORS_ORIGINS:
-	app.add_middleware(
+	fastapi_app.add_middleware(
 		CORSMiddleware,
 		allow_origins=settings.BACKEND_CORS_ORIGINS,
 		allow_credentials=True,
@@ -15,4 +16,5 @@ if settings.BACKEND_CORS_ORIGINS:
 		allow_headers=["*"],
 	)
 
-app.include_router(api_router, prefix=settings.API_V1_STR)
+fastapi_app.include_router(api_router, prefix=settings.API_V1_STR)
+app = mount_socketio(fastapi_app)
