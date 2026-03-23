@@ -17,6 +17,7 @@ class BlogPostCreate(BaseModel):
 	metadata: dict[str, Any] = Field(default_factory=dict)
 	visible: bool = True
 	published_at: Optional[datetime] = None  # None = publish immediately
+	translations: dict[str, dict[str, str]] = Field(default_factory=dict)
 
 
 class BlogPostUpdate(BaseModel):
@@ -29,6 +30,7 @@ class BlogPostUpdate(BaseModel):
 	metadata: Optional[dict[str, Any]] = None
 	visible: Optional[bool] = None
 	published_at: Optional[datetime] = None
+	translations: Optional[dict[str, dict[str, str]]] = None
 
 
 class BlogPostRead(BaseModel):
@@ -45,6 +47,8 @@ class BlogPostRead(BaseModel):
 	created_at: datetime
 	updated_at: datetime
 	deleted_at: Optional[datetime] = None
+	translations: dict[str, dict[str, str]] = Field(default_factory=dict)
+	lang: str = "es"
 
 	class Config:
 		from_attributes = True

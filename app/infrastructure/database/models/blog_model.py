@@ -19,6 +19,7 @@ class BlogPostModel(Base):
 	content = Column(Text, nullable=True)
 	images = Column(JSONB, default=list, nullable=False)
 	meta = Column("metadata", JSONB, default=dict, nullable=False)
+	translations = Column(JSONB, default=dict, nullable=False)
 	visible = Column(Boolean, default=True, nullable=False, index=True)
 	published_at = Column(DateTime(timezone=True), nullable=True, index=True)
 	created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)

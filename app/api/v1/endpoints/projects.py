@@ -5,7 +5,8 @@ Protected: POST, PUT, DELETE endpoints (require authentication)
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import get_current_user, get_project_service, require_csrf
+from app.api.deps import get_current_user, get_language, get_project_service, require_csrf
+from app.core.i18n import resolve_translation
 from app.domain.schemas.project import (
 	ProjectCreate,
 	ProjectListResponse,
@@ -17,9 +18,9 @@ from app.services.project_service import ProjectService
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-def _entity_to_read(project) -> dict:
+def _entity_to_read(project, lang: str = "es") -> dict:
 	"""Convert domain entity to response dict"""
-	return {
+	data = {
 		"id": project.id,
 		"title": project.title,
 		"slug": project.slug,
@@ -32,7 +33,10 @@ def _entity_to_read(project) -> dict:
 		"created_at": project.created_at,
 		"updated_at": project.updated_at,
 		"deleted_at": project.deleted_at,
+		"translations": project.translations,
+		"lang": lang,
 	}
+	return resolve_translation(data, project.translations, lang, ["title", "description", "content"])
 
 
 # ============================================================================
@@ -43,12 +47,13 @@ def _entity_to_read(project) -> dict:
 def list_projects(
 	limit: int = Query(default=20, ge=1, le=100),
 	offset: int = Query(default=0, ge=0),
+	lang: str = Depends(get_language),
 	service: ProjectService = Depends(get_project_service),
 ):
 	"""List all published projects (public endpoint)"""
 	projects, total = service.list_public_projects(limit=limit, offset=offset)
 	return ProjectListResponse(
-		items=[_entity_to_read(p) for p in projects],
+		items=[_entity_to_read(p, lang=lang) for p in projects],
 		total=total,
 		limit=limit,
 		offset=offset,
@@ -59,13 +64,14 @@ def list_projects(
 @router.get("/{slug}", response_model=ProjectRead)
 def get_project(
 	slug: str,
+	lang: str = Depends(get_language),
 	service: ProjectService = Depends(get_project_service),
 ):
 	"""Get a published project by slug (public endpoint)"""
 	project = service.get_public_project(slug)
 	if not project:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
-	return _entity_to_read(project)
+	return _entity_to_read(project, lang=lang)
 
 
 # ============================================================================
@@ -78,6 +84,7 @@ def list_all_projects_admin(
 	offset: int = Query(default=0, ge=0),
 	include_hidden: bool = Query(default=True),
 	include_deleted: bool = Query(default=False),
+	lang: str = Depends(get_language),
 	_current_user=Depends(get_current_user),
 	service: ProjectService = Depends(get_project_service),
 ):
@@ -89,7 +96,7 @@ def list_all_projects_admin(
 		offset=offset,
 	)
 	return ProjectListResponse(
-		items=[_entity_to_read(p) for p in projects],
+		items=[_entity_to_read(p, lang=lang) for p in projects],
 		total=total,
 		limit=limit,
 		offset=offset,
@@ -100,6 +107,7 @@ def list_all_projects_admin(
 @router.get("/admin/{project_id}", response_model=ProjectRead)
 def get_project_by_id_admin(
 	project_id: int,
+	lang: str = Depends(get_language),
 	_current_user=Depends(get_current_user),
 	service: ProjectService = Depends(get_project_service),
 ):
@@ -107,7 +115,7 @@ def get_project_by_id_admin(
 	project = service.get_project_by_id(project_id)
 	if not project:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
-	return _entity_to_read(project)
+	return _entity_to_read(project, lang=lang)
 
 
 @router.post("", response_model=ProjectRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_csrf)])
@@ -126,8 +134,9 @@ def create_project(
 		metadata=payload.metadata,
 		visible=payload.visible,
 		order=payload.order,
+		translations=payload.translations,
 	)
-	return _entity_to_read(project)
+	return _entity_to_read(project, lang="es")
 
 
 @router.put("/{project_id}", response_model=ProjectRead, dependencies=[Depends(require_csrf)])
@@ -149,6 +158,7 @@ def update_project(
 			metadata=payload.metadata,
 			visible=payload.visible,
 			order=payload.order,
+			translations=payload.translations,
 		)
 	except ValueError as e:
 		if "slug" in str(e):
@@ -157,7 +167,7 @@ def update_project(
 
 	if not project:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
-	return _entity_to_read(project)
+	return _entity_to_read(project, lang="es")
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_csrf)])
@@ -183,4 +193,4 @@ def restore_project(
 	project = service.restore_project(project_id)
 	if not project:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
-	return _entity_to_read(project)
+	return _entity_to_read(project, lang="es")

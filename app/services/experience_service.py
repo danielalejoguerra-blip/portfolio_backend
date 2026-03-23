@@ -7,11 +7,13 @@ from typing import Optional
 
 from app.domain.entities.experience import Experience
 from app.domain.repositories.experience_repository import ExperienceRepository
+from app.services.ai_translation_service import AITranslationService
 
 
 class ExperienceService:
-	def __init__(self, repository: ExperienceRepository) -> None:
+	def __init__(self, repository: ExperienceRepository, ai_translation_service: AITranslationService = None) -> None:
 		self.repository = repository
+		self.ai_translation_service = ai_translation_service
 
 	def _generate_slug(self, title: str) -> str:
 		"""Generate URL-friendly slug from title"""
@@ -41,11 +43,19 @@ class ExperienceService:
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		order: int = 0,
+		translations: dict = None,
 	) -> Experience:
 		if not slug:
 			slug = self._generate_slug(title)
 
 		slug = self._ensure_unique_slug(slug)
+
+		# Auto-translate if no manual translations provided
+		if not translations and self.ai_translation_service:
+			translations = self.ai_translation_service.translate_fields(
+				domain="experience",
+				fields={"title": title, "description": description, "content": content},
+			)
 
 		return self.repository.create(
 			title=title,
@@ -56,6 +66,7 @@ class ExperienceService:
 			metadata=metadata,
 			visible=visible,
 			order=order,
+			translations=translations,
 		)
 
 	def update_experience(
@@ -69,6 +80,7 @@ class ExperienceService:
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		order: Optional[int] = None,
+		translations: dict = None,
 	) -> Optional[Experience]:
 		existing = self.repository.get_by_id(experience_id)
 		if not existing:
@@ -77,6 +89,19 @@ class ExperienceService:
 		if slug and slug != existing.slug:
 			if self.repository.slug_exists(slug, experience_id):
 				raise ValueError("slug_already_exists")
+
+		# Auto-translate if no manual translations provided
+		if translations is None and self.ai_translation_service:
+			translate_fields = {
+				"title": title if title is not None else existing.title,
+				"description": description if description is not None else existing.description,
+				"content": content if content is not None else existing.content,
+			}
+			translations = self.ai_translation_service.translate_fields(
+				domain="experience",
+				fields=translate_fields,
+				existing_translations=existing.translations,
+			)
 
 		return self.repository.update(
 			experience_id=experience_id,
@@ -88,6 +113,7 @@ class ExperienceService:
 			metadata=metadata,
 			visible=visible,
 			order=order,
+			translations=translations,
 		)
 
 	def delete_experience(self, experience_id: int, soft: bool = True) -> bool:

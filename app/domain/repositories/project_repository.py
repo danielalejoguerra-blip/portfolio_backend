@@ -42,6 +42,7 @@ class ProjectRepository(ABC):
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		order: int = 0,
+		translations: dict = None,
 	) -> Project:
 		raise NotImplementedError()
 
@@ -57,6 +58,7 @@ class ProjectRepository(ABC):
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		order: Optional[int] = None,
+		translations: dict = None,
 	) -> Optional[Project]:
 		raise NotImplementedError()
 
