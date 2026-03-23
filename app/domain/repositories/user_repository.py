@@ -5,6 +5,7 @@ from typing import Optional
 from app.domain.entities.user import User
 
 
+
 class UserRepository(ABC):
 	@abstractmethod
 	def get_by_email(self, email: str) -> Optional[User]:
@@ -47,4 +48,17 @@ class UserRepository(ABC):
 
 	@abstractmethod
 	def revoke_refresh_token(self, token_hash: str) -> None:
+		raise NotImplementedError()
+
+	@abstractmethod
+	def update_user(
+		self,
+		user_id: int,
+		full_name: Optional[str] = None,
+		bio: Optional[str] = None,
+		location: Optional[str] = None,
+		website: Optional[str] = None,
+		company: Optional[str] = None,
+		avatar_url: Optional[str] = None,
+	) -> Optional[User]:
 		raise NotImplementedError()
