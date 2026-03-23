@@ -1,11 +1,12 @@
-from typing import Generator
+from typing import Generator, Optional
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Header, HTTPException, Query, Request, status
 from jose import JWTError
 from sqlalchemy.orm import Session
 
 from app.core import security
 from app.core.config import settings
+from app.core.i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES
 from app.infrastructure.database.session import SessionLocal
 from app.infrastructure.repositories.user_repository_impl import UserRepositoryImpl
 from app.infrastructure.repositories.project_repository_impl import ProjectRepositoryImpl
@@ -26,6 +27,7 @@ from app.services.analytics_service import AnalyticsService
 from app.services.personal_info_service import PersonalInfoService
 from app.services.skill_service import SkillService
 from app.services.email_service import EmailService
+from app.services.ai_translation_service import AITranslationService
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -76,6 +78,29 @@ def require_csrf(request: Request) -> None:
 		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token invalid")
 
 
+def get_language(
+	lang: Optional[str] = Query(None, description="Language code (es, en)"),
+	accept_language: Optional[str] = Header(None),
+) -> str:
+	"""Resolve the requested language from query param or Accept-Language header."""
+	if lang and lang in SUPPORTED_LANGUAGES:
+		return lang
+	if accept_language:
+		for part in accept_language.split(","):
+			code = part.strip().split(";")[0].strip().lower()[:2]
+			if code in SUPPORTED_LANGUAGES:
+				return code
+	return DEFAULT_LANGUAGE
+
+
+# ============================================================================
+# AI Translation
+# ============================================================================
+
+def get_ai_translation_service() -> AITranslationService:
+	return AITranslationService()
+
+
 # ============================================================================
 # Content Domain Dependencies
 # ============================================================================
@@ -85,8 +110,11 @@ def get_project_repository(db: Session = Depends(get_db)) -> ProjectRepositoryIm
 	return ProjectRepositoryImpl(db)
 
 
-def get_project_service(repo: ProjectRepositoryImpl = Depends(get_project_repository)) -> ProjectService:
-	return ProjectService(repo)
+def get_project_service(
+	repo: ProjectRepositoryImpl = Depends(get_project_repository),
+	ai_translator: AITranslationService = Depends(get_ai_translation_service),
+) -> ProjectService:
+	return ProjectService(repo, ai_translator)
 
 
 # Blog dependencies
@@ -94,8 +122,11 @@ def get_blog_repository(db: Session = Depends(get_db)) -> BlogRepositoryImpl:
 	return BlogRepositoryImpl(db)
 
 
-def get_blog_service(repo: BlogRepositoryImpl = Depends(get_blog_repository)) -> BlogService:
-	return BlogService(repo)
+def get_blog_service(
+	repo: BlogRepositoryImpl = Depends(get_blog_repository),
+	ai_translator: AITranslationService = Depends(get_ai_translation_service),
+) -> BlogService:
+	return BlogService(repo, ai_translator)
 
 
 # Course dependencies
@@ -103,8 +134,11 @@ def get_course_repository(db: Session = Depends(get_db)) -> CourseRepositoryImpl
 	return CourseRepositoryImpl(db)
 
 
-def get_course_service(repo: CourseRepositoryImpl = Depends(get_course_repository)) -> CourseService:
-	return CourseService(repo)
+def get_course_service(
+	repo: CourseRepositoryImpl = Depends(get_course_repository),
+	ai_translator: AITranslationService = Depends(get_ai_translation_service),
+) -> CourseService:
+	return CourseService(repo, ai_translator)
 
 
 # Education dependencies
@@ -112,8 +146,11 @@ def get_education_repository(db: Session = Depends(get_db)) -> EducationReposito
 	return EducationRepositoryImpl(db)
 
 
-def get_education_service(repo: EducationRepositoryImpl = Depends(get_education_repository)) -> EducationService:
-	return EducationService(repo)
+def get_education_service(
+	repo: EducationRepositoryImpl = Depends(get_education_repository),
+	ai_translator: AITranslationService = Depends(get_ai_translation_service),
+) -> EducationService:
+	return EducationService(repo, ai_translator)
 
 
 # Experience dependencies
@@ -121,8 +158,11 @@ def get_experience_repository(db: Session = Depends(get_db)) -> ExperienceReposi
 	return ExperienceRepositoryImpl(db)
 
 
-def get_experience_service(repo: ExperienceRepositoryImpl = Depends(get_experience_repository)) -> ExperienceService:
-	return ExperienceService(repo)
+def get_experience_service(
+	repo: ExperienceRepositoryImpl = Depends(get_experience_repository),
+	ai_translator: AITranslationService = Depends(get_ai_translation_service),
+) -> ExperienceService:
+	return ExperienceService(repo, ai_translator)
 
 
 # Analytics dependencies
@@ -141,8 +181,9 @@ def get_personal_info_repository(db: Session = Depends(get_db)) -> PersonalInfoR
 
 def get_personal_info_service(
 	repo: PersonalInfoRepositoryImpl = Depends(get_personal_info_repository),
+	ai_translator: AITranslationService = Depends(get_ai_translation_service),
 ) -> PersonalInfoService:
-	return PersonalInfoService(repo)
+	return PersonalInfoService(repo, ai_translator)
 
 
 # Skill dependencies
@@ -150,5 +191,8 @@ def get_skill_repository(db: Session = Depends(get_db)) -> SkillRepositoryImpl:
 	return SkillRepositoryImpl(db)
 
 
-def get_skill_service(repo: SkillRepositoryImpl = Depends(get_skill_repository)) -> SkillService:
-	return SkillService(repo)
+def get_skill_service(
+	repo: SkillRepositoryImpl = Depends(get_skill_repository),
+	ai_translator: AITranslationService = Depends(get_ai_translation_service),
+) -> SkillService:
+	return SkillService(repo, ai_translator)

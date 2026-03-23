@@ -7,11 +7,13 @@ from typing import Optional
 
 from app.domain.entities.skill import Skill
 from app.domain.repositories.skill_repository import SkillRepository
+from app.services.ai_translation_service import AITranslationService
 
 
 class SkillService:
-	def __init__(self, repository: SkillRepository) -> None:
+	def __init__(self, repository: SkillRepository, ai_translation_service: AITranslationService = None) -> None:
 		self.repository = repository
+		self.ai_translation_service = ai_translation_service
 
 	def _generate_slug(self, title: str) -> str:
 		"""Generate URL-friendly slug from title"""
@@ -39,11 +41,19 @@ class SkillService:
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		order: int = 0,
+		translations: dict = None,
 	) -> Skill:
 		if not slug:
 			slug = self._generate_slug(title)
 
 		slug = self._ensure_unique_slug(slug)
+
+		# Auto-translate if no manual translations provided
+		if not translations and self.ai_translation_service:
+			translations = self.ai_translation_service.translate_fields(
+				domain="skill",
+				fields={"description": description},
+			)
 
 		return self.repository.create(
 			title=title,
@@ -52,6 +62,7 @@ class SkillService:
 			metadata=metadata,
 			visible=visible,
 			order=order,
+			translations=translations,
 		)
 
 	def update_skill(
@@ -63,6 +74,7 @@ class SkillService:
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		order: Optional[int] = None,
+		translations: dict = None,
 	) -> Optional[Skill]:
 		existing = self.repository.get_by_id(skill_id)
 		if not existing:
@@ -72,6 +84,17 @@ class SkillService:
 			if self.repository.slug_exists(slug, skill_id):
 				raise ValueError("slug_already_exists")
 
+		# Auto-translate if no manual translations provided
+		if translations is None and self.ai_translation_service:
+			translate_fields = {
+				"description": description if description is not None else existing.description,
+			}
+			translations = self.ai_translation_service.translate_fields(
+				domain="skill",
+				fields=translate_fields,
+				existing_translations=existing.translations,
+			)
+
 		return self.repository.update(
 			skill_id=skill_id,
 			title=title,
@@ -80,6 +103,7 @@ class SkillService:
 			metadata=metadata,
 			visible=visible,
 			order=order,
+			translations=translations,
 		)
 
 	def delete_skill(self, skill_id: int, soft: bool = True) -> bool:

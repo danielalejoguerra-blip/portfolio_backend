@@ -8,11 +8,13 @@ from typing import Optional
 
 from app.domain.entities.blog import BlogPost
 from app.domain.repositories.blog_repository import BlogRepository
+from app.services.ai_translation_service import AITranslationService
 
 
 class BlogService:
-	def __init__(self, repository: BlogRepository) -> None:
+	def __init__(self, repository: BlogRepository, ai_translation_service: AITranslationService = None) -> None:
 		self.repository = repository
+		self.ai_translation_service = ai_translation_service
 
 	def _generate_slug(self, title: str) -> str:
 		"""Generate URL-friendly slug from title"""
@@ -42,11 +44,19 @@ class BlogService:
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		published_at: Optional[datetime] = None,
+		translations: dict = None,
 	) -> BlogPost:
 		if not slug:
 			slug = self._generate_slug(title)
 
 		slug = self._ensure_unique_slug(slug)
+
+		# Auto-translate if no manual translations provided
+		if not translations and self.ai_translation_service:
+			translations = self.ai_translation_service.translate_fields(
+				domain="blog",
+				fields={"title": title, "description": description, "content": content},
+			)
 
 		return self.repository.create(
 			title=title,
@@ -57,6 +67,7 @@ class BlogService:
 			metadata=metadata,
 			visible=visible,
 			published_at=published_at,
+			translations=translations,
 		)
 
 	def update_post(
@@ -70,6 +81,7 @@ class BlogService:
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		published_at: Optional[datetime] = None,
+		translations: dict = None,
 	) -> Optional[BlogPost]:
 		existing = self.repository.get_by_id(post_id)
 		if not existing:
@@ -78,6 +90,19 @@ class BlogService:
 		if slug and slug != existing.slug:
 			if self.repository.slug_exists(slug, post_id):
 				raise ValueError("slug_already_exists")
+
+		# Auto-translate if no manual translations provided
+		if translations is None and self.ai_translation_service:
+			translate_fields = {
+				"title": title if title is not None else existing.title,
+				"description": description if description is not None else existing.description,
+				"content": content if content is not None else existing.content,
+			}
+			translations = self.ai_translation_service.translate_fields(
+				domain="blog",
+				fields=translate_fields,
+				existing_translations=existing.translations,
+			)
 
 		return self.repository.update(
 			post_id=post_id,
@@ -89,6 +114,7 @@ class BlogService:
 			metadata=metadata,
 			visible=visible,
 			published_at=published_at,
+			translations=translations,
 		)
 
 	def delete_post(self, post_id: int, soft: bool = True) -> bool:

@@ -5,7 +5,8 @@ Protected: POST, PUT, DELETE endpoints (require authentication)
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import get_current_user, get_personal_info_service, require_csrf
+from app.api.deps import get_current_user, get_language, get_personal_info_service, require_csrf
+from app.core.i18n import resolve_translation
 from app.domain.schemas.personal_info import (
 	PersonalInfoCreate,
 	PersonalInfoListResponse,
@@ -17,9 +18,9 @@ from app.services.personal_info_service import PersonalInfoService
 router = APIRouter(prefix="/personal-info", tags=["personal-info"])
 
 
-def _entity_to_read(info) -> dict:
+def _entity_to_read(info, lang: str = "es") -> dict:
 	"""Convert domain entity to response dict"""
-	return {
+	data = {
 		"id": info.id,
 		"full_name": info.full_name,
 		"headline": info.headline,
@@ -37,7 +38,10 @@ def _entity_to_read(info) -> dict:
 		"created_at": info.created_at,
 		"updated_at": info.updated_at,
 		"deleted_at": info.deleted_at,
+		"translations": info.translations,
+		"lang": lang,
 	}
+	return resolve_translation(data, info.translations, lang, ["headline", "bio"])
 
 
 # ============================================================================
@@ -48,12 +52,13 @@ def _entity_to_read(info) -> dict:
 def list_personal_info(
 	limit: int = Query(default=20, ge=1, le=100),
 	offset: int = Query(default=0, ge=0),
+	lang: str = Depends(get_language),
 	service: PersonalInfoService = Depends(get_personal_info_service),
 ):
 	"""List all published personal info entries (public endpoint)"""
 	items, total = service.list_public_personal_info(limit=limit, offset=offset)
 	return PersonalInfoListResponse(
-		items=[_entity_to_read(i) for i in items],
+		items=[_entity_to_read(i, lang=lang) for i in items],
 		total=total,
 		limit=limit,
 		offset=offset,
@@ -64,13 +69,14 @@ def list_personal_info(
 @router.get("/{info_id}", response_model=PersonalInfoRead)
 def get_personal_info(
 	info_id: int,
+	lang: str = Depends(get_language),
 	service: PersonalInfoService = Depends(get_personal_info_service),
 ):
 	"""Get a published personal info entry by ID (public endpoint)"""
 	info = service.get_public_personal_info(info_id)
 	if not info:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Personal info not found")
-	return _entity_to_read(info)
+	return _entity_to_read(info, lang=lang)
 
 
 # ============================================================================
@@ -83,6 +89,7 @@ def list_all_personal_info_admin(
 	offset: int = Query(default=0, ge=0),
 	include_hidden: bool = Query(default=True),
 	include_deleted: bool = Query(default=False),
+	lang: str = Depends(get_language),
 	_current_user=Depends(get_current_user),
 	service: PersonalInfoService = Depends(get_personal_info_service),
 ):
@@ -94,7 +101,7 @@ def list_all_personal_info_admin(
 		offset=offset,
 	)
 	return PersonalInfoListResponse(
-		items=[_entity_to_read(i) for i in items],
+		items=[_entity_to_read(i, lang=lang) for i in items],
 		total=total,
 		limit=limit,
 		offset=offset,
@@ -105,6 +112,7 @@ def list_all_personal_info_admin(
 @router.get("/admin/{info_id}", response_model=PersonalInfoRead)
 def get_personal_info_by_id_admin(
 	info_id: int,
+	lang: str = Depends(get_language),
 	_current_user=Depends(get_current_user),
 	service: PersonalInfoService = Depends(get_personal_info_service),
 ):
@@ -112,7 +120,7 @@ def get_personal_info_by_id_admin(
 	info = service.get_personal_info_by_id(info_id)
 	if not info:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Personal info not found")
-	return _entity_to_read(info)
+	return _entity_to_read(info, lang=lang)
 
 
 @router.post("", response_model=PersonalInfoRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_csrf)])
@@ -136,8 +144,9 @@ def create_personal_info(
 		metadata=payload.metadata,
 		visible=payload.visible,
 		order=payload.order,
+		translations=payload.translations,
 	)
-	return _entity_to_read(info)
+	return _entity_to_read(info, lang="es")
 
 
 @router.put("/{info_id}", response_model=PersonalInfoRead, dependencies=[Depends(require_csrf)])
@@ -163,10 +172,11 @@ def update_personal_info(
 		metadata=payload.metadata,
 		visible=payload.visible,
 		order=payload.order,
+		translations=payload.translations,
 	)
 	if not info:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Personal info not found")
-	return _entity_to_read(info)
+	return _entity_to_read(info, lang="es")
 
 
 @router.delete("/{info_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_csrf)])
@@ -192,4 +202,4 @@ def restore_personal_info(
 	info = service.restore_personal_info(info_id)
 	if not info:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Personal info not found")
-	return _entity_to_read(info)
+	return _entity_to_read(info, lang="es")

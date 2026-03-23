@@ -49,6 +49,7 @@ class BlogRepository(ABC):
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		published_at: Optional[datetime] = None,
+		translations: dict = None,
 	) -> BlogPost:
 		raise NotImplementedError()
 
@@ -64,6 +65,7 @@ class BlogRepository(ABC):
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		published_at: Optional[datetime] = None,
+		translations: dict = None,
 	) -> Optional[BlogPost]:
 		raise NotImplementedError()
 

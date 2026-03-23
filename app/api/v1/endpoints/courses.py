@@ -5,7 +5,8 @@ Protected: POST, PUT, DELETE endpoints (require authentication)
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import get_course_service, get_current_user, require_csrf
+from app.api.deps import get_course_service, get_current_user, get_language, require_csrf
+from app.core.i18n import resolve_translation
 from app.domain.schemas.course import (
 	CourseCreate,
 	CourseListResponse,
@@ -17,9 +18,9 @@ from app.services.course_service import CourseService
 router = APIRouter(prefix="/courses", tags=["courses"])
 
 
-def _entity_to_read(course) -> dict:
+def _entity_to_read(course, lang: str = "es") -> dict:
 	"""Convert domain entity to response dict"""
-	return {
+	data = {
 		"id": course.id,
 		"title": course.title,
 		"slug": course.slug,
@@ -32,7 +33,10 @@ def _entity_to_read(course) -> dict:
 		"created_at": course.created_at,
 		"updated_at": course.updated_at,
 		"deleted_at": course.deleted_at,
+		"translations": course.translations,
+		"lang": lang,
 	}
+	return resolve_translation(data, course.translations, lang, ["description", "content"])
 
 
 # ============================================================================
@@ -43,12 +47,13 @@ def _entity_to_read(course) -> dict:
 def list_courses(
 	limit: int = Query(default=20, ge=1, le=100),
 	offset: int = Query(default=0, ge=0),
+	lang: str = Depends(get_language),
 	service: CourseService = Depends(get_course_service),
 ):
 	"""List all published courses (public endpoint)"""
 	courses, total = service.list_public_courses(limit=limit, offset=offset)
 	return CourseListResponse(
-		items=[_entity_to_read(c) for c in courses],
+		items=[_entity_to_read(c, lang=lang) for c in courses],
 		total=total,
 		limit=limit,
 		offset=offset,
@@ -59,13 +64,14 @@ def list_courses(
 @router.get("/{slug}", response_model=CourseRead)
 def get_course(
 	slug: str,
+	lang: str = Depends(get_language),
 	service: CourseService = Depends(get_course_service),
 ):
 	"""Get a published course by slug (public endpoint)"""
 	course = service.get_public_course(slug)
 	if not course:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
-	return _entity_to_read(course)
+	return _entity_to_read(course, lang=lang)
 
 
 # ============================================================================
@@ -78,6 +84,7 @@ def list_all_courses_admin(
 	offset: int = Query(default=0, ge=0),
 	include_hidden: bool = Query(default=True),
 	include_deleted: bool = Query(default=False),
+	lang: str = Depends(get_language),
 	_current_user=Depends(get_current_user),
 	service: CourseService = Depends(get_course_service),
 ):
@@ -89,7 +96,7 @@ def list_all_courses_admin(
 		offset=offset,
 	)
 	return CourseListResponse(
-		items=[_entity_to_read(c) for c in courses],
+		items=[_entity_to_read(c, lang=lang) for c in courses],
 		total=total,
 		limit=limit,
 		offset=offset,
@@ -100,6 +107,7 @@ def list_all_courses_admin(
 @router.get("/admin/{course_id}", response_model=CourseRead)
 def get_course_by_id_admin(
 	course_id: int,
+	lang: str = Depends(get_language),
 	_current_user=Depends(get_current_user),
 	service: CourseService = Depends(get_course_service),
 ):
@@ -107,7 +115,7 @@ def get_course_by_id_admin(
 	course = service.get_course_by_id(course_id)
 	if not course:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
-	return _entity_to_read(course)
+	return _entity_to_read(course, lang=lang)
 
 
 @router.post("", response_model=CourseRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_csrf)])
@@ -126,8 +134,9 @@ def create_course(
 		metadata=payload.metadata,
 		visible=payload.visible,
 		order=payload.order,
+		translations=payload.translations,
 	)
-	return _entity_to_read(course)
+	return _entity_to_read(course, lang="es")
 
 
 @router.put("/{course_id}", response_model=CourseRead, dependencies=[Depends(require_csrf)])
@@ -149,6 +158,7 @@ def update_course(
 			metadata=payload.metadata,
 			visible=payload.visible,
 			order=payload.order,
+			translations=payload.translations,
 		)
 	except ValueError as e:
 		if "slug" in str(e):
@@ -157,7 +167,7 @@ def update_course(
 
 	if not course:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
-	return _entity_to_read(course)
+	return _entity_to_read(course, lang="es")
 
 
 @router.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_csrf)])
@@ -183,4 +193,4 @@ def restore_course(
 	course = service.restore_course(course_id)
 	if not course:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
-	return _entity_to_read(course)
+	return _entity_to_read(course, lang="es")

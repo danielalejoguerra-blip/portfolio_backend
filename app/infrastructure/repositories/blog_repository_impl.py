@@ -31,6 +31,7 @@ class BlogRepositoryImpl(BlogRepository):
 			created_at=model.created_at,
 			updated_at=model.updated_at,
 			deleted_at=model.deleted_at,
+			translations=model.translations or {},
 		)
 
 	def get_by_id(self, post_id: int) -> Optional[BlogPost]:
@@ -105,6 +106,7 @@ class BlogRepositoryImpl(BlogRepository):
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		published_at: Optional[datetime] = None,
+		translations: dict = None,
 	) -> BlogPost:
 		model = BlogPostModel(
 			title=title,
@@ -115,6 +117,7 @@ class BlogRepositoryImpl(BlogRepository):
 			meta=metadata or {},
 			visible=visible,
 			published_at=published_at,
+			translations=translations or {},
 		)
 		self.db.add(model)
 		self.db.commit()
@@ -132,6 +135,7 @@ class BlogRepositoryImpl(BlogRepository):
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		published_at: Optional[datetime] = None,
+		translations: dict = None,
 	) -> Optional[BlogPost]:
 		model = self.db.query(BlogPostModel).filter(BlogPostModel.id == post_id).first()
 		if not model:
@@ -153,6 +157,8 @@ class BlogRepositoryImpl(BlogRepository):
 			model.visible = visible
 		if published_at is not None:
 			model.published_at = published_at
+		if translations is not None:
+			model.translations = translations
 
 		model.updated_at = datetime.now(timezone.utc)
 		self.db.commit()

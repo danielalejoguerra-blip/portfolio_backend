@@ -1,7 +1,7 @@
 """
 Skill entity for portfolio skills domain.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
@@ -29,6 +29,7 @@ class Skill:
 	created_at: datetime
 	updated_at: datetime
 	deleted_at: Optional[datetime] = None
+	translations: dict = field(default_factory=dict)
 
 	@property
 	def is_deleted(self) -> bool:

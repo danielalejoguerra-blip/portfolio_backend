@@ -19,6 +19,7 @@ class ProjectModel(Base):
 	content = Column(Text, nullable=True)
 	images = Column(JSONB, default=list, nullable=False)  # List of image URLs
 	meta = Column("metadata", JSONB, default=dict, nullable=False)  # Flexible JSON data
+	translations = Column(JSONB, default=dict, nullable=False)
 	visible = Column(Boolean, default=True, nullable=False, index=True)
 	order = Column(Integer, default=0, nullable=False, index=True)
 	created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)

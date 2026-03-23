@@ -4,6 +4,7 @@ from app.api.v1.endpoints import (
 	analytics,
 	auth,
 	blog,
+	contact,
 	courses,
 	education,
 	experience,
@@ -30,3 +31,6 @@ api_router.include_router(skills.router)
 
 # Analytics
 api_router.include_router(analytics.router)
+
+# Contact
+api_router.include_router(contact.router)

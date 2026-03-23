@@ -24,6 +24,7 @@ class PersonalInfoModel(Base):
 	resume_url = Column(String(2048), nullable=True)
 	social_links = Column(JSONB, default=dict, nullable=False)
 	meta = Column("metadata", JSONB, default=dict, nullable=False)
+	translations = Column(JSONB, default=dict, nullable=False)
 	visible = Column(Boolean, default=True, nullable=False, index=True)
 	order = Column(Integer, default=0, nullable=False, index=True)
 	created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)

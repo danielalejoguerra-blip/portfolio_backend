@@ -7,11 +7,13 @@ from typing import Optional
 
 from app.domain.entities.project import Project
 from app.domain.repositories.project_repository import ProjectRepository
+from app.services.ai_translation_service import AITranslationService
 
 
 class ProjectService:
-	def __init__(self, repository: ProjectRepository) -> None:
+	def __init__(self, repository: ProjectRepository, ai_translation_service: AITranslationService = None) -> None:
 		self.repository = repository
+		self.ai_translation_service = ai_translation_service
 
 	def _generate_slug(self, title: str) -> str:
 		"""Generate URL-friendly slug from title"""
@@ -46,6 +48,7 @@ class ProjectService:
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		order: int = 0,
+		translations: dict = None,
 	) -> Project:
 		# Generate slug from title if not provided
 		if not slug:
@@ -53,6 +56,13 @@ class ProjectService:
 
 		# Ensure slug is unique
 		slug = self._ensure_unique_slug(slug)
+
+		# Auto-translate if no manual translations provided
+		if not translations and self.ai_translation_service:
+			translations = self.ai_translation_service.translate_fields(
+				domain="project",
+				fields={"title": title, "description": description, "content": content},
+			)
 
 		return self.repository.create(
 			title=title,
@@ -63,6 +73,7 @@ class ProjectService:
 			metadata=metadata,
 			visible=visible,
 			order=order,
+			translations=translations,
 		)
 
 	def update_project(
@@ -76,6 +87,7 @@ class ProjectService:
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		order: Optional[int] = None,
+		translations: dict = None,
 	) -> Optional[Project]:
 		# Check if project exists
 		existing = self.repository.get_by_id(project_id)
@@ -87,6 +99,19 @@ class ProjectService:
 			if self.repository.slug_exists(slug, project_id):
 				raise ValueError("slug_already_exists")
 
+		# Auto-translate if no manual translations provided
+		if translations is None and self.ai_translation_service:
+			translate_fields = {
+				"title": title if title is not None else existing.title,
+				"description": description if description is not None else existing.description,
+				"content": content if content is not None else existing.content,
+			}
+			translations = self.ai_translation_service.translate_fields(
+				domain="project",
+				fields=translate_fields,
+				existing_translations=existing.translations,
+			)
+
 		return self.repository.update(
 			project_id=project_id,
 			title=title,
@@ -97,6 +122,7 @@ class ProjectService:
 			metadata=metadata,
 			visible=visible,
 			order=order,
+			translations=translations,
 		)
 
 	def delete_project(self, project_id: int, soft: bool = True) -> bool:

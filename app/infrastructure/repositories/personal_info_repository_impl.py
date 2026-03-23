@@ -35,6 +35,7 @@ class PersonalInfoRepositoryImpl(PersonalInfoRepository):
 			created_at=model.created_at,
 			updated_at=model.updated_at,
 			deleted_at=model.deleted_at,
+			translations=model.translations or {},
 		)
 
 	def get_by_id(self, info_id: int) -> Optional[PersonalInfo]:
@@ -91,6 +92,7 @@ class PersonalInfoRepositoryImpl(PersonalInfoRepository):
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		order: int = 0,
+		translations: dict = None,
 	) -> PersonalInfo:
 		model = PersonalInfoModel(
 			full_name=full_name,
@@ -106,6 +108,7 @@ class PersonalInfoRepositoryImpl(PersonalInfoRepository):
 			meta=metadata or {},
 			visible=visible,
 			order=order,
+			translations=translations or {},
 		)
 		self.db.add(model)
 		self.db.commit()
@@ -128,6 +131,7 @@ class PersonalInfoRepositoryImpl(PersonalInfoRepository):
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		order: Optional[int] = None,
+		translations: dict = None,
 	) -> Optional[PersonalInfo]:
 		model = self.db.query(PersonalInfoModel).filter(PersonalInfoModel.id == info_id).first()
 		if not model:
@@ -159,6 +163,8 @@ class PersonalInfoRepositoryImpl(PersonalInfoRepository):
 			model.visible = visible
 		if order is not None:
 			model.order = order
+		if translations is not None:
+			model.translations = translations
 
 		model.updated_at = datetime.now(timezone.utc)
 		self.db.commit()

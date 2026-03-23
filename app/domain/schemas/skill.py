@@ -15,6 +15,7 @@ class SkillCreate(BaseModel):
 	metadata: dict[str, Any] = Field(default_factory=dict)
 	visible: bool = True
 	order: int = Field(default=0, ge=0)
+	translations: dict[str, dict[str, str]] = Field(default_factory=dict)
 
 
 class SkillUpdate(BaseModel):
@@ -25,6 +26,7 @@ class SkillUpdate(BaseModel):
 	metadata: Optional[dict[str, Any]] = None
 	visible: Optional[bool] = None
 	order: Optional[int] = Field(None, ge=0)
+	translations: Optional[dict[str, dict[str, str]]] = None
 
 
 class SkillRead(BaseModel):
@@ -39,6 +41,8 @@ class SkillRead(BaseModel):
 	created_at: datetime
 	updated_at: datetime
 	deleted_at: Optional[datetime] = None
+	translations: dict[str, dict[str, str]] = Field(default_factory=dict)
+	lang: str = "es"
 
 	class Config:
 		from_attributes = True

@@ -31,6 +31,7 @@ class ExperienceRepositoryImpl(ExperienceRepository):
 			created_at=model.created_at,
 			updated_at=model.updated_at,
 			deleted_at=model.deleted_at,
+			translations=model.translations or {},
 		)
 
 	def get_by_id(self, experience_id: int) -> Optional[Experience]:
@@ -88,6 +89,7 @@ class ExperienceRepositoryImpl(ExperienceRepository):
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		order: int = 0,
+		translations: dict = None,
 	) -> Experience:
 		model = ExperienceModel(
 			title=title,
@@ -98,6 +100,7 @@ class ExperienceRepositoryImpl(ExperienceRepository):
 			meta=metadata or {},
 			visible=visible,
 			order=order,
+			translations=translations or {},
 		)
 		self.db.add(model)
 		self.db.commit()
@@ -115,6 +118,7 @@ class ExperienceRepositoryImpl(ExperienceRepository):
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		order: Optional[int] = None,
+		translations: dict = None,
 	) -> Optional[Experience]:
 		model = self.db.query(ExperienceModel).filter(ExperienceModel.id == experience_id).first()
 		if not model:
@@ -136,6 +140,8 @@ class ExperienceRepositoryImpl(ExperienceRepository):
 			model.visible = visible
 		if order is not None:
 			model.order = order
+		if translations is not None:
+			model.translations = translations
 
 		model.updated_at = datetime.now(timezone.utc)
 		self.db.commit()

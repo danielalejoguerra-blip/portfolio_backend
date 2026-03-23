@@ -45,6 +45,7 @@ class ContentBase:
 	created_at: datetime
 	updated_at: datetime
 	deleted_at: Optional[datetime] = None  # Soft delete support
+	translations: dict = field(default_factory=dict)
 
 	@property
 	def is_deleted(self) -> bool:

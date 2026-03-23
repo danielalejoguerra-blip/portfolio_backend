@@ -40,6 +40,7 @@ class SkillRepository(ABC):
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		order: int = 0,
+		translations: dict = None,
 	) -> Skill:
 		raise NotImplementedError()
 
@@ -53,6 +54,7 @@ class SkillRepository(ABC):
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		order: Optional[int] = None,
+		translations: dict = None,
 	) -> Optional[Skill]:
 		raise NotImplementedError()
 

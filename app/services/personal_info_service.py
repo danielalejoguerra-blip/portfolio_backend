@@ -5,11 +5,13 @@ from typing import Optional
 
 from app.domain.entities.personal_info import PersonalInfo
 from app.domain.repositories.personal_info_repository import PersonalInfoRepository
+from app.services.ai_translation_service import AITranslationService
 
 
 class PersonalInfoService:
-	def __init__(self, repository: PersonalInfoRepository) -> None:
+	def __init__(self, repository: PersonalInfoRepository, ai_translation_service: AITranslationService = None) -> None:
 		self.repository = repository
+		self.ai_translation_service = ai_translation_service
 
 	@staticmethod
 	def _normalize_url(value: Optional[object]) -> Optional[str]:
@@ -32,7 +34,15 @@ class PersonalInfoService:
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		order: int = 0,
+		translations: dict = None,
 	) -> PersonalInfo:
+		# Auto-translate if no manual translations provided
+		if not translations and self.ai_translation_service:
+			translations = self.ai_translation_service.translate_fields(
+				domain="personal_info",
+				fields={"headline": headline, "bio": bio},
+			)
+
 		return self.repository.create(
 			full_name=full_name,
 			headline=headline,
@@ -47,6 +57,7 @@ class PersonalInfoService:
 			metadata=metadata,
 			visible=visible,
 			order=order,
+			translations=translations,
 		)
 
 	def update_personal_info(
@@ -65,7 +76,21 @@ class PersonalInfoService:
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		order: Optional[int] = None,
+		translations: dict = None,
 	) -> Optional[PersonalInfo]:
+		# Auto-translate if no manual translations provided
+		if translations is None and self.ai_translation_service:
+			existing = self.repository.get_by_id(info_id)
+			if existing:
+				translations = self.ai_translation_service.translate_fields(
+					domain="personal_info",
+					fields={
+						"headline": headline if headline is not None else existing.headline,
+						"bio": bio if bio is not None else existing.bio,
+					},
+					existing_translations=existing.translations,
+				)
+
 		return self.repository.update(
 			info_id=info_id,
 			full_name=full_name,
@@ -81,6 +106,7 @@ class PersonalInfoService:
 			metadata=metadata,
 			visible=visible,
 			order=order,
+			translations=translations,
 		)
 
 	def delete_personal_info(self, info_id: int, soft: bool = True) -> bool:

@@ -144,3 +144,115 @@ class EmailService:
             logger.error("Error SMTP al enviar email de reset: %s", exc)
         except OSError as exc:
             logger.error("Error de red al conectar con Gmail SMTP: %s", exc)
+
+    # ------------------------------------------------------------------ #
+    #  Contact form                                                       #
+    # ------------------------------------------------------------------ #
+
+    def _build_contact_html(self, name: str, email: str, message: str) -> str:
+        safe_name = name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        safe_email = email.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        safe_message = message.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br />")
+        return f"""
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nuevo mensaje de contacto</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0"
+               style="background-color:#ffffff;border-radius:8px;overflow:hidden;
+                      box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background-color:#1a1a2e;padding:32px 40px;">
+              <p style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:.5px;">
+                Portfolio API
+              </p>
+              <p style="margin:6px 0 0;color:#a0aec0;font-size:13px;">
+                Nuevo mensaje de contacto
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px;">
+              <p style="margin:0 0 8px;color:#718096;font-size:13px;">De:</p>
+              <p style="margin:0 0 20px;color:#2d3748;font-size:15px;">
+                <strong>{safe_name}</strong> &lt;{safe_email}&gt;
+              </p>
+              <p style="margin:0 0 8px;color:#718096;font-size:13px;">Mensaje:</p>
+              <div style="background-color:#f7fafc;border:1px solid #e2e8f0;border-radius:6px;
+                          padding:20px;color:#2d3748;font-size:14px;line-height:1.6;">
+                {safe_message}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#f7fafc;padding:20px 40px;">
+              <p style="margin:0;color:#a0aec0;font-size:11px;text-align:center;">
+                Mensaje enviado desde el formulario de contacto del portfolio.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        """.strip()
+
+    def send_contact_email(self, name: str, email: str, message: str) -> bool:
+        """Envía un email de contacto al propietario del portfolio.
+
+        Returns True si se envió correctamente, False en caso contrario.
+        """
+        if not settings.GMAIL_SENDER_EMAIL or not settings.GMAIL_APP_PASSWORD:
+            logger.error(
+                "GMAIL_SENDER_EMAIL o GMAIL_APP_PASSWORD no están configurados. "
+                "El email de contacto no pudo ser enviado."
+            )
+            return False
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"Nuevo mensaje de contacto de {name}"
+        msg["From"] = f"Portfolio API <{settings.GMAIL_SENDER_EMAIL}>"
+        msg["To"] = settings.GMAIL_SENDER_EMAIL
+        msg["Reply-To"] = email
+
+        plain_text = (
+            f"Nuevo mensaje de contacto\n\n"
+            f"De: {name} <{email}>\n\n"
+            f"Mensaje:\n{message}\n"
+        )
+        msg.attach(MIMEText(plain_text, "plain", "utf-8"))
+        msg.attach(MIMEText(self._build_contact_html(name, email, message), "html", "utf-8"))
+
+        try:
+            with smtplib.SMTP(self.GMAIL_SMTP_HOST, self.GMAIL_SMTP_PORT) as smtp:
+                smtp.ehlo()
+                smtp.starttls()
+                smtp.ehlo()
+                smtp.login(settings.GMAIL_SENDER_EMAIL, settings.GMAIL_APP_PASSWORD)
+                smtp.sendmail(
+                    settings.GMAIL_SENDER_EMAIL,
+                    settings.GMAIL_SENDER_EMAIL,
+                    msg.as_string(),
+                )
+            logger.info("Email de contacto recibido de %s <%s>", name, email)
+            return True
+        except smtplib.SMTPAuthenticationError:
+            logger.error(
+                "Fallo de autenticación SMTP. Verifica GMAIL_SENDER_EMAIL y GMAIL_APP_PASSWORD."
+            )
+            return False
+        except smtplib.SMTPException as exc:
+            logger.error("Error SMTP al enviar email de contacto: %s", exc)
+            return False
+        except OSError as exc:
+            logger.error("Error de red al conectar con Gmail SMTP: %s", exc)
+            return False

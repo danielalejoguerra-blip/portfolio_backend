@@ -7,11 +7,13 @@ from typing import Optional
 
 from app.domain.entities.education import Education
 from app.domain.repositories.education_repository import EducationRepository
+from app.services.ai_translation_service import AITranslationService
 
 
 class EducationService:
-	def __init__(self, repository: EducationRepository) -> None:
+	def __init__(self, repository: EducationRepository, ai_translation_service: AITranslationService = None) -> None:
 		self.repository = repository
+		self.ai_translation_service = ai_translation_service
 
 	def _generate_slug(self, title: str) -> str:
 		"""Generate URL-friendly slug from title"""
@@ -41,11 +43,19 @@ class EducationService:
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		order: int = 0,
+		translations: dict = None,
 	) -> Education:
 		if not slug:
 			slug = self._generate_slug(title)
 
 		slug = self._ensure_unique_slug(slug)
+
+		# Auto-translate if no manual translations provided
+		if not translations and self.ai_translation_service:
+			translations = self.ai_translation_service.translate_fields(
+				domain="education",
+				fields={"description": description, "content": content},
+			)
 
 		return self.repository.create(
 			title=title,
@@ -56,6 +66,7 @@ class EducationService:
 			metadata=metadata,
 			visible=visible,
 			order=order,
+			translations=translations,
 		)
 
 	def update_education(
@@ -69,6 +80,7 @@ class EducationService:
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		order: Optional[int] = None,
+		translations: dict = None,
 	) -> Optional[Education]:
 		existing = self.repository.get_by_id(education_id)
 		if not existing:
@@ -77,6 +89,18 @@ class EducationService:
 		if slug and slug != existing.slug:
 			if self.repository.slug_exists(slug, education_id):
 				raise ValueError("slug_already_exists")
+
+		# Auto-translate if no manual translations provided
+		if translations is None and self.ai_translation_service:
+			translate_fields = {
+				"description": description if description is not None else existing.description,
+				"content": content if content is not None else existing.content,
+			}
+			translations = self.ai_translation_service.translate_fields(
+				domain="education",
+				fields=translate_fields,
+				existing_translations=existing.translations,
+			)
 
 		return self.repository.update(
 			education_id=education_id,
@@ -88,6 +112,7 @@ class EducationService:
 			metadata=metadata,
 			visible=visible,
 			order=order,
+			translations=translations,
 		)
 
 	def delete_education(self, education_id: int, soft: bool = True) -> bool:

@@ -31,6 +31,7 @@ class EducationRepositoryImpl(EducationRepository):
 			created_at=model.created_at,
 			updated_at=model.updated_at,
 			deleted_at=model.deleted_at,
+			translations=model.translations or {},
 		)
 
 	def get_by_id(self, education_id: int) -> Optional[Education]:
@@ -88,6 +89,7 @@ class EducationRepositoryImpl(EducationRepository):
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		order: int = 0,
+		translations: dict = None,
 	) -> Education:
 		model = EducationModel(
 			title=title,
@@ -98,6 +100,7 @@ class EducationRepositoryImpl(EducationRepository):
 			meta=metadata or {},
 			visible=visible,
 			order=order,
+			translations=translations or {},
 		)
 		self.db.add(model)
 		self.db.commit()
@@ -115,6 +118,7 @@ class EducationRepositoryImpl(EducationRepository):
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		order: Optional[int] = None,
+		translations: dict = None,
 	) -> Optional[Education]:
 		model = self.db.query(EducationModel).filter(EducationModel.id == education_id).first()
 		if not model:
@@ -136,6 +140,8 @@ class EducationRepositoryImpl(EducationRepository):
 			model.visible = visible
 		if order is not None:
 			model.order = order
+		if translations is not None:
+			model.translations = translations
 
 		model.updated_at = datetime.now(timezone.utc)
 		self.db.commit()

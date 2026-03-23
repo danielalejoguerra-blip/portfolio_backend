@@ -17,6 +17,7 @@ class EducationCreate(BaseModel):
 	metadata: dict[str, Any] = Field(default_factory=dict)
 	visible: bool = True
 	order: int = Field(default=0, ge=0)
+	translations: dict[str, dict[str, str]] = Field(default_factory=dict)
 
 
 class EducationUpdate(BaseModel):
@@ -29,6 +30,7 @@ class EducationUpdate(BaseModel):
 	metadata: Optional[dict[str, Any]] = None
 	visible: Optional[bool] = None
 	order: Optional[int] = Field(None, ge=0)
+	translations: Optional[dict[str, dict[str, str]]] = None
 
 
 class EducationRead(BaseModel):
@@ -45,6 +47,8 @@ class EducationRead(BaseModel):
 	created_at: datetime
 	updated_at: datetime
 	deleted_at: Optional[datetime] = None
+	translations: dict[str, dict[str, str]] = Field(default_factory=dict)
+	lang: str = "es"
 
 	class Config:
 		from_attributes = True

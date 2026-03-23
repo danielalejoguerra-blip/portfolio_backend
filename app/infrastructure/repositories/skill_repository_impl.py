@@ -29,6 +29,7 @@ class SkillRepositoryImpl(SkillRepository):
 			created_at=model.created_at,
 			updated_at=model.updated_at,
 			deleted_at=model.deleted_at,
+			translations=model.translations or {},
 		)
 
 	def get_by_id(self, skill_id: int) -> Optional[Skill]:
@@ -84,6 +85,7 @@ class SkillRepositoryImpl(SkillRepository):
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		order: int = 0,
+		translations: dict = None,
 	) -> Skill:
 		model = SkillModel(
 			title=title,
@@ -92,6 +94,7 @@ class SkillRepositoryImpl(SkillRepository):
 			meta=metadata or {},
 			visible=visible,
 			order=order,
+			translations=translations or {},
 		)
 		self.db.add(model)
 		self.db.commit()
@@ -107,6 +110,7 @@ class SkillRepositoryImpl(SkillRepository):
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		order: Optional[int] = None,
+		translations: dict = None,
 	) -> Optional[Skill]:
 		model = self.db.query(SkillModel).filter(SkillModel.id == skill_id).first()
 		if not model:
@@ -124,6 +128,8 @@ class SkillRepositoryImpl(SkillRepository):
 			model.visible = visible
 		if order is not None:
 			model.order = order
+		if translations is not None:
+			model.translations = translations
 
 		model.updated_at = datetime.now(timezone.utc)
 		self.db.commit()

@@ -45,5 +45,7 @@ class Settings(BaseSettings):
 	GMAIL_APP_PASSWORD: Optional[str] = None
 	PASSWORD_RESET_CODE_EXPIRE_MINUTES: int = 15
 
+	GEMINI_API_KEY: Optional[str] = None
+
 
 settings = Settings()
