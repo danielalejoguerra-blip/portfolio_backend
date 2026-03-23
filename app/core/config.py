@@ -41,5 +41,9 @@ class Settings(BaseSettings):
 	ANALYTICS_REALTIME_DAYS: int = 30
 	ANALYTICS_REALTIME_TOP_LIMIT: int = 10
 
+	GMAIL_SENDER_EMAIL: Optional[str] = None
+	GMAIL_APP_PASSWORD: Optional[str] = None
+	PASSWORD_RESET_CODE_EXPIRE_MINUTES: int = 15
+
 
 settings = Settings()

@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 
-from app.api.deps import get_current_user, get_user_service, require_csrf
+from app.api.deps import get_current_user, get_email_service, get_user_service, require_csrf
 from app.core import security
 from app.core.config import settings
-from app.domain.schemas.user import UserCreate, UserLogin, UserRead
+from app.domain.schemas.user import PasswordResetConfirm, PasswordResetRequest, UserCreate, UserLogin, UserRead
+from app.services.email_service import EmailService
 from app.services.user_service import UserService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -120,3 +121,47 @@ def logout_user(
 		service.logout(refresh_token)
 	_clear_auth_cookies(response)
 	return {"status": "ok"}
+
+
+@router.post("/password-reset/request", status_code=status.HTTP_202_ACCEPTED)
+def request_password_reset(
+	payload: PasswordResetRequest,
+	background_tasks: BackgroundTasks,
+	service: UserService = Depends(get_user_service),
+	email_service: EmailService = Depends(get_email_service),
+):
+	"""Solicita un código OTP de 6 dígitos al email indicado.
+	Siempre responde 202 para no filtrar la existencia del usuario.
+	"""
+	background_tasks.add_task(
+		service.request_password_reset,
+		email=payload.email,
+		email_service=email_service,
+	)
+	return {"detail": "Si el email existe, recibirás un código de verificación."}
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_200_OK)
+def confirm_password_reset(
+	payload: PasswordResetConfirm,
+	service: UserService = Depends(get_user_service),
+):
+	"""Verifica el código OTP y establece la nueva contraseña."""
+	try:
+		service.confirm_password_reset(
+			email=payload.email,
+			code=payload.code,
+			new_password=payload.new_password,
+		)
+	except ValueError as exc:
+		error = str(exc)
+		if error == "reset_code_expired":
+			raise HTTPException(
+				status_code=status.HTTP_410_GONE,
+				detail="El código de verificación ha expirado.",
+			)
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="Código de verificación inválido.",
+		)
+	return {"detail": "Contraseña actualizada correctamente."}

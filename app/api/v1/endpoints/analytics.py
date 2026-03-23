@@ -77,18 +77,19 @@ def _normalize_page_slug(page_slug: str) -> str:
 
 
 def _resolve_country(request: Optional[Request], client_ip: Optional[str]) -> str:
-	"""Resolve country with proxy headers and fallback to local/unknown."""
+	"""Resolve country as ISO alpha-2 with safe fallbacks for DB compatibility."""
 	if request:
 		for header in ("CF-IPCountry", "X-Country-Code", "X-Country"):
 			country = request.headers.get(header)
 			if country and country.strip():
 				normalized = country.strip().upper()
-				if normalized == "XX":
-					return "unknown"
-				return normalized
+				if len(normalized) == 2 and normalized.isalpha():
+					return normalized
+				if normalized in {"UNKNOWN", "UN"}:
+					return "XX"
 
 	if not client_ip:
-		return "unknown"
+		return "XX"
 
 	try:
 		ip_obj = ipaddress.ip_address(client_ip)
@@ -99,11 +100,11 @@ def _resolve_country(request: Optional[Request], client_ip: Optional[str]) -> st
 			or ip_obj.is_reserved
 			or ip_obj.is_unspecified
 		):
-			return "local"
+			return "XL"
 	except ValueError:
-		return "unknown"
+		return "XX"
 
-	return "unknown"
+	return "XX"
 
 
 def _infer_content_from_page_slug(

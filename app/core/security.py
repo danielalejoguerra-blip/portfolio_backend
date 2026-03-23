@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import hashlib
+import hmac
 import secrets
 import uuid
 
@@ -57,3 +58,22 @@ def hash_token(token: str) -> str:
 
 def create_csrf_token() -> str:
 	return secrets.token_urlsafe(32)
+
+def generate_reset_code() -> str:
+    """Genera un código OTP numérico de 6 dígitos."""
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def hash_reset_code(code: str) -> str:
+    """HMAC-SHA256 del código OTP usando el JWT secret como clave.
+    Protege contra fuerza bruta offline si la DB es comprometida."""
+    return hmac.new(
+        settings.JWT_SECRET_KEY.encode("utf-8"),
+        code.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def safe_compare(a: str, b: str) -> bool:
+    """Comparación en tiempo constante para prevenir ataques de timing."""
+    return hmac.compare_digest(a, b)

@@ -25,6 +25,7 @@ from app.services.experience_service import ExperienceService
 from app.services.analytics_service import AnalyticsService
 from app.services.personal_info_service import PersonalInfoService
 from app.services.skill_service import SkillService
+from app.services.email_service import EmailService
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -41,6 +42,10 @@ def get_user_repository(db: Session = Depends(get_db)) -> UserRepositoryImpl:
 
 def get_user_service(repo: UserRepositoryImpl = Depends(get_user_repository)) -> UserService:
 	return UserService(repo)
+
+
+def get_email_service() -> EmailService:
+	return EmailService()
 
 
 def get_current_user(

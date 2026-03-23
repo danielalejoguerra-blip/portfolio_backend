@@ -5,7 +5,11 @@ from sqlalchemy.orm import Session
 
 from app.domain.entities.user import User
 from app.domain.repositories.user_repository import UserRepository
-from app.infrastructure.database.models.user_model import RefreshTokenModel, UserModel
+from app.infrastructure.database.models.user_model import (
+    PasswordResetCodeModel,
+    RefreshTokenModel,
+    UserModel,
+)
 
 
 class UserRepositoryImpl(UserRepository):
@@ -191,3 +195,59 @@ class UserRepositoryImpl(UserRepository):
 			avatar_url=user.avatar_url,
 			is_active=user.is_active,
 		)
+
+	# ------------------------------------------------------------------ #
+	#  Password reset                                                       #
+	# ------------------------------------------------------------------ #
+
+	def create_password_reset_code(
+		self, user_id: int, code_hash: str, expires_at: datetime
+	) -> None:
+		record = PasswordResetCodeModel(
+			user_id=user_id,
+			code_hash=code_hash,
+			expires_at=expires_at,
+			used=False,
+		)
+		self.db.add(record)
+		self.db.commit()
+
+	def get_valid_reset_code(self, user_id: int) -> Optional[dict]:
+		record = (
+			self.db.query(PasswordResetCodeModel)
+			.filter(
+				PasswordResetCodeModel.user_id == user_id,
+				PasswordResetCodeModel.used.is_(False),
+			)
+			.order_by(PasswordResetCodeModel.created_at.desc())
+			.first()
+		)
+		if not record:
+			return None
+		return {
+			"id": record.id,
+			"user_id": record.user_id,
+			"code_hash": record.code_hash,
+			"expires_at": record.expires_at,
+		}
+
+	def mark_reset_code_used(self, code_id: int) -> None:
+		record = self.db.query(PasswordResetCodeModel).filter(
+			PasswordResetCodeModel.id == code_id
+		).first()
+		if record:
+			record.used = True
+			self.db.commit()
+
+	def invalidate_user_reset_codes(self, user_id: int) -> None:
+		self.db.query(PasswordResetCodeModel).filter(
+			PasswordResetCodeModel.user_id == user_id,
+			PasswordResetCodeModel.used.is_(False),
+		).update({"used": True})
+		self.db.commit()
+
+	def update_password(self, user_id: int, hashed_password: str) -> None:
+		user = self.db.query(UserModel).filter(UserModel.id == user_id).first()
+		if user:
+			user.hashed_password = hashed_password
+			self.db.commit()
