@@ -412,7 +412,7 @@ Configurar `SOCKETIO_REDIS_URL` para usar Redis como message broker en despliegu
 
 ## Servicio de Email
 
-Usa Gmail SMTP con contraseña de aplicación (App Password). Los emails son HTML con fallback en texto plano.
+Usa SMTP genérico (Hostinger, Gmail u otro proveedor). Los emails son HTML con fallback en texto plano.
 
 ### Emails enviados
 
@@ -422,7 +422,7 @@ Usa Gmail SMTP con contraseña de aplicación (App Password). Los emails son HTM
 - Muestra el código OTP en grande, con tiempo de expiración
 
 #### Formulario de contacto
-- **Para:** `GMAIL_SENDER_EMAIL` (el propietario del portfolio)
+- **Para:** `SMTP_SENDER_EMAIL` (el propietario del portfolio)
 - **Reply-To:** email del visitante
 - **Asunto:** "Nuevo mensaje de contacto de {nombre}"
 - Incluye nombre, email y mensaje del visitante
@@ -451,16 +451,21 @@ COOKIE_DOMAIN=tudominio.com   # opcional
 # CORS
 BACKEND_CORS_ORIGINS=["http://localhost:3000","https://tudominio.com"]
 
-# Email (Gmail SMTP)
-GMAIL_SENDER_EMAIL=tu@gmail.com
-GMAIL_APP_PASSWORD=xxxx_xxxx_xxxx_xxxx
+# Email (SMTP)
+# Hostinger recomendado: 465 + SSL o 587 + TLS
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_USE_SSL=true
+SMTP_USE_TLS=false
+SMTP_SENDER_EMAIL=tu-correo@tudominio.com
+SMTP_PASSWORD=tu_password_o_app_password
 PASSWORD_RESET_CODE_EXPIRE_MINUTES=15
 
 # Socket.IO
 SOCKETIO_REDIS_URL=redis://localhost:6379   # opcional
 ```
 
-> Para desarrollo local puedes omitir `DATABASE_URL` (usa SQLite) y `GMAIL_*` (los emails se loggean pero no se envían).
+> Para desarrollo local puedes omitir `DATABASE_URL` (usa SQLite) y `SMTP_*` (los emails se loggean pero no se envían).
 
 ---
 
