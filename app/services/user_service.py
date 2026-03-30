@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from jose import JWTError
@@ -107,3 +107,68 @@ class UserService:
 
 	def get_user_by_id(self, user_id: int) -> Optional[User]:
 		return self.repository.get_by_id(user_id)
+
+	def update_user(
+		self,
+		user_id: int,
+		full_name: Optional[str] = None,
+		bio: Optional[str] = None,
+		location: Optional[str] = None,
+		website: Optional[str] = None,
+		company: Optional[str] = None,
+		avatar_url: Optional[str] = None,
+	) -> Optional[User]:
+		return self.repository.update_user(
+			user_id=user_id,
+			full_name=full_name,
+			bio=bio,
+			location=location,
+			website=website,
+			company=company,
+			avatar_url=avatar_url,
+		)
+
+	# ------------------------------------------------------------------ #
+	#  Password reset                                                       #
+	# ------------------------------------------------------------------ #
+
+	def request_password_reset(self, email: str, email_service) -> None:
+		"""Genera un código OTP, lo almacena y envía el email.
+		Siempre retorna sin error para no filtrar la existencia del usuario.
+		"""
+		user = self.repository.get_by_email(email)
+		if not user:
+			return
+
+		# Invalida cualquier código pendiente anterior
+		self.repository.invalidate_user_reset_codes(user.id)
+
+		code = security.generate_reset_code()
+		code_hash = security.hash_reset_code(code)
+		expires_at = datetime.now(timezone.utc) + timedelta(
+			minutes=settings.PASSWORD_RESET_CODE_EXPIRE_MINUTES
+		)
+		self.repository.create_password_reset_code(user.id, code_hash, expires_at)
+		email_service.send_password_reset_email(user.email, code, user.username or user.email)
+
+	def confirm_password_reset(self, email: str, code: str, new_password: str) -> None:
+		"""Verifica el código OTP y actualiza la contraseña."""
+		user = self.repository.get_by_email(email)
+		if not user:
+			raise ValueError("invalid_reset_code")
+
+		stored = self.repository.get_valid_reset_code(user.id)
+		if not stored:
+			raise ValueError("invalid_reset_code")
+
+		if stored["expires_at"] < datetime.now(timezone.utc):
+			self.repository.mark_reset_code_used(stored["id"])
+			raise ValueError("reset_code_expired")
+
+		code_hash = security.hash_reset_code(code)
+		if not security.safe_compare(code_hash, stored["code_hash"]):
+			raise ValueError("invalid_reset_code")
+
+		self.repository.mark_reset_code_used(stored["id"])
+		new_hashed = security.hash_password(new_password)
+		self.repository.update_password(user.id, new_hashed)

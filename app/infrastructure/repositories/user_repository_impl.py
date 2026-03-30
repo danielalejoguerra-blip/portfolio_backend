@@ -5,7 +5,11 @@ from sqlalchemy.orm import Session
 
 from app.domain.entities.user import User
 from app.domain.repositories.user_repository import UserRepository
-from app.infrastructure.database.models.user_model import RefreshTokenModel, UserModel
+from app.infrastructure.database.models.user_model import (
+    PasswordResetCodeModel,
+    RefreshTokenModel,
+    UserModel,
+)
 
 
 class UserRepositoryImpl(UserRepository):
@@ -147,3 +151,103 @@ class UserRepositoryImpl(UserRepository):
 		token.revoked = True
 		self.db.add(token)
 		self.db.commit()
+
+	def update_user(
+		self,
+		user_id: int,
+		full_name: Optional[str] = None,
+		bio: Optional[str] = None,
+		location: Optional[str] = None,
+		website: Optional[str] = None,
+		company: Optional[str] = None,
+		avatar_url: Optional[str] = None,
+	) -> Optional[User]:
+		user = self.db.query(UserModel).filter(UserModel.id == user_id).first()
+		if not user:
+			return None
+
+		# Solo actualizar los campos que no son None
+		if full_name is not None:
+			user.full_name = full_name
+		if bio is not None:
+			user.bio = bio
+		if location is not None:
+			user.location = location
+		if website is not None:
+			user.website = website
+		if company is not None:
+			user.company = company
+		if avatar_url is not None:
+			user.avatar_url = avatar_url
+
+		self.db.commit()
+		self.db.refresh(user)
+
+		return User(
+			id=user.id,
+			username=user.username,
+			email=user.email,
+			full_name=user.full_name,
+			bio=user.bio,
+			location=user.location,
+			website=user.website,
+			company=user.company,
+			avatar_url=user.avatar_url,
+			is_active=user.is_active,
+		)
+
+	# ------------------------------------------------------------------ #
+	#  Password reset                                                       #
+	# ------------------------------------------------------------------ #
+
+	def create_password_reset_code(
+		self, user_id: int, code_hash: str, expires_at: datetime
+	) -> None:
+		record = PasswordResetCodeModel(
+			user_id=user_id,
+			code_hash=code_hash,
+			expires_at=expires_at,
+			used=False,
+		)
+		self.db.add(record)
+		self.db.commit()
+
+	def get_valid_reset_code(self, user_id: int) -> Optional[dict]:
+		record = (
+			self.db.query(PasswordResetCodeModel)
+			.filter(
+				PasswordResetCodeModel.user_id == user_id,
+				PasswordResetCodeModel.used.is_(False),
+			)
+			.order_by(PasswordResetCodeModel.created_at.desc())
+			.first()
+		)
+		if not record:
+			return None
+		return {
+			"id": record.id,
+			"user_id": record.user_id,
+			"code_hash": record.code_hash,
+			"expires_at": record.expires_at,
+		}
+
+	def mark_reset_code_used(self, code_id: int) -> None:
+		record = self.db.query(PasswordResetCodeModel).filter(
+			PasswordResetCodeModel.id == code_id
+		).first()
+		if record:
+			record.used = True
+			self.db.commit()
+
+	def invalidate_user_reset_codes(self, user_id: int) -> None:
+		self.db.query(PasswordResetCodeModel).filter(
+			PasswordResetCodeModel.user_id == user_id,
+			PasswordResetCodeModel.used.is_(False),
+		).update({"used": True})
+		self.db.commit()
+
+	def update_password(self, user_id: int, hashed_password: str) -> None:
+		user = self.db.query(UserModel).filter(UserModel.id == user_id).first()
+		if user:
+			user.hashed_password = hashed_password
+			self.db.commit()

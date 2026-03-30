@@ -13,6 +13,14 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from app.core.config import settings
 from app.infrastructure.database.session import Base
 import app.infrastructure.database.models.user_model  # noqa: F401
+import app.infrastructure.database.models.project_model  # noqa: F401
+import app.infrastructure.database.models.blog_model  # noqa: F401
+import app.infrastructure.database.models.course_model  # noqa: F401
+import app.infrastructure.database.models.education_model  # noqa: F401
+import app.infrastructure.database.models.experience_model  # noqa: F401
+import app.infrastructure.database.models.analytics_model  # noqa: F401
+import app.infrastructure.database.models.personal_info_model  # noqa: F401
+import app.infrastructure.database.models.skill_model  # noqa: F401
 
 config = context.config
 

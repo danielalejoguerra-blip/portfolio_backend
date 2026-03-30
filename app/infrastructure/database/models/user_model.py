@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 from app.infrastructure.database.session import Base
 
 
+
 class UserModel(Base):
 	__tablename__ = "users"
 
@@ -24,6 +25,20 @@ class UserModel(Base):
 	updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 	refresh_tokens = relationship("RefreshTokenModel", back_populates="user")
+	password_reset_codes = relationship("PasswordResetCodeModel", back_populates="user", cascade="all, delete-orphan")
+
+
+class PasswordResetCodeModel(Base):
+	__tablename__ = "password_reset_codes"
+
+	id = Column(Integer, primary_key=True, index=True)
+	user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+	code_hash = Column(String(64), nullable=False)  # HMAC-SHA256 hex digest
+	expires_at = Column(DateTime(timezone=True), nullable=False)
+	used = Column(Boolean, default=False, nullable=False)
+	created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+	user = relationship("UserModel", back_populates="password_reset_codes")
 
 
 class RefreshTokenModel(Base):
