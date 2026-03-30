@@ -41,6 +41,15 @@ class Settings(BaseSettings):
 	ANALYTICS_REALTIME_DAYS: int = 30
 	ANALYTICS_REALTIME_TOP_LIMIT: int = 10
 
+	# Generic SMTP settings (works with Hostinger, Gmail, etc.)
+	SMTP_HOST: str = "smtp.gmail.com"
+	SMTP_PORT: int = 587
+	SMTP_USE_TLS: bool = True
+	SMTP_USE_SSL: bool = False
+	SMTP_SENDER_EMAIL: Optional[str] = None
+	SMTP_PASSWORD: Optional[str] = None
+
+	# Backward compatibility with previous Gmail-only variable names
 	GMAIL_SENDER_EMAIL: Optional[str] = None
 	GMAIL_APP_PASSWORD: Optional[str] = None
 	PASSWORD_RESET_CODE_EXPIRE_MINUTES: int = 15
