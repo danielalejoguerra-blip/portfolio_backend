@@ -9,10 +9,21 @@ logger = logging.getLogger(__name__)
 
 
 class EmailService:
-    """Servicio de envío de emails via Gmail SMTP con App Password."""
+    """Servicio de envío de emails via SMTP (Hostinger/Gmail/u otros)."""
 
-    GMAIL_SMTP_HOST = "smtp.gmail.com"
-    GMAIL_SMTP_PORT = 587
+    @staticmethod
+    def _sender_email() -> str | None:
+        return settings.SMTP_SENDER_EMAIL or settings.GMAIL_SENDER_EMAIL
+
+    @staticmethod
+    def _smtp_password() -> str | None:
+        return settings.SMTP_PASSWORD or settings.GMAIL_APP_PASSWORD
+
+    def _smtp_client(self):
+        """Build an SMTP client according to SSL/TLS settings."""
+        if settings.SMTP_USE_SSL:
+            return smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT)
+        return smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
 
     def _build_reset_html(self, username: str, code: str) -> str:
         return f"""
@@ -102,48 +113,52 @@ class EmailService:
         """.strip()
 
     def send_password_reset_email(self, to_email: str, code: str, username: str) -> None:
-        """Envía el email de restablecimiento de contraseña via Gmail SMTP.
+      """Envia el email de restablecimiento de contrasena via SMTP.
 
-        Maneja errores internamente y los registra en el log para no
-        interrumpir el flujo de la petición al usuario.
-        """
-        if not settings.GMAIL_SENDER_EMAIL or not settings.GMAIL_APP_PASSWORD:
-            logger.error(
-                "GMAIL_SENDER_EMAIL o GMAIL_APP_PASSWORD no están configurados. "
-                "El email de reset no pudo ser enviado."
-            )
-            return
+      Maneja errores internamente y los registra en el log para no
+      interrumpir el flujo de la peticion al usuario.
+      """
+      sender_email = self._sender_email()
+      smtp_password = self._smtp_password()
 
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Código de verificación para restablecer tu contraseña"
-        msg["From"] = f"Portfolio API <{settings.GMAIL_SENDER_EMAIL}>"
-        msg["To"] = to_email
-
-        plain_text = (
-            f"Hola {username},\n\n"
-            f"Tu código de verificación es: {code}\n\n"
-            f"Expira en {settings.PASSWORD_RESET_CODE_EXPIRE_MINUTES} minutos.\n\n"
-            "Si no solicitaste este cambio, ignora este mensaje.\n"
+      if not sender_email or not smtp_password:
+        logger.error(
+          "SMTP_SENDER_EMAIL/SMTP_PASSWORD (o GMAIL_SENDER_EMAIL/GMAIL_APP_PASSWORD) "
+          "no estan configurados. El email de reset no pudo ser enviado."
         )
-        msg.attach(MIMEText(plain_text, "plain", "utf-8"))
-        msg.attach(MIMEText(self._build_reset_html(username, code), "html", "utf-8"))
+        return
 
-        try:
-            with smtplib.SMTP(self.GMAIL_SMTP_HOST, self.GMAIL_SMTP_PORT) as smtp:
-                smtp.ehlo()
-                smtp.starttls()
-                smtp.ehlo()
-                smtp.login(settings.GMAIL_SENDER_EMAIL, settings.GMAIL_APP_PASSWORD)
-                smtp.sendmail(settings.GMAIL_SENDER_EMAIL, to_email, msg.as_string())
-            logger.info("Email de reset enviado a %s", to_email)
-        except smtplib.SMTPAuthenticationError:
-            logger.error(
-                "Fallo de autenticación SMTP. Verifica GMAIL_SENDER_EMAIL y GMAIL_APP_PASSWORD."
-            )
-        except smtplib.SMTPException as exc:
-            logger.error("Error SMTP al enviar email de reset: %s", exc)
-        except OSError as exc:
-            logger.error("Error de red al conectar con Gmail SMTP: %s", exc)
+      msg = MIMEMultipart("alternative")
+      msg["Subject"] = "Codigo de verificacion para restablecer tu contrasena"
+      msg["From"] = f"Portfolio API <{sender_email}>"
+      msg["To"] = to_email
+
+      plain_text = (
+        f"Hola {username},\n\n"
+        f"Tu codigo de verificacion es: {code}\n\n"
+        f"Expira en {settings.PASSWORD_RESET_CODE_EXPIRE_MINUTES} minutos.\n\n"
+        "Si no solicitaste este cambio, ignora este mensaje.\n"
+      )
+      msg.attach(MIMEText(plain_text, "plain", "utf-8"))
+      msg.attach(MIMEText(self._build_reset_html(username, code), "html", "utf-8"))
+
+      try:
+        with self._smtp_client() as smtp:
+          smtp.ehlo()
+          if settings.SMTP_USE_TLS and not settings.SMTP_USE_SSL:
+            smtp.starttls()
+            smtp.ehlo()
+          smtp.login(sender_email, smtp_password)
+          smtp.sendmail(sender_email, to_email, msg.as_string())
+        logger.info("Email de reset enviado a %s", to_email)
+      except smtplib.SMTPAuthenticationError:
+        logger.error(
+          "Fallo de autenticacion SMTP. Verifica credenciales y configuracion SMTP."
+        )
+      except smtplib.SMTPException as exc:
+        logger.error("Error SMTP al enviar email de reset: %s", exc)
+      except OSError as exc:
+        logger.error("Error de red al conectar con SMTP: %s", exc)
 
     # ------------------------------------------------------------------ #
     #  Contact form                                                       #
@@ -207,52 +222,56 @@ class EmailService:
         """.strip()
 
     def send_contact_email(self, name: str, email: str, message: str) -> bool:
-        """Envía un email de contacto al propietario del portfolio.
+      """Envia un email de contacto al propietario del portfolio.
 
-        Returns True si se envió correctamente, False en caso contrario.
-        """
-        if not settings.GMAIL_SENDER_EMAIL or not settings.GMAIL_APP_PASSWORD:
-            logger.error(
-                "GMAIL_SENDER_EMAIL o GMAIL_APP_PASSWORD no están configurados. "
-                "El email de contacto no pudo ser enviado."
-            )
-            return False
+      Returns True si se envio correctamente, False en caso contrario.
+      """
+      sender_email = self._sender_email()
+      smtp_password = self._smtp_password()
 
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"Nuevo mensaje de contacto de {name}"
-        msg["From"] = f"Portfolio API <{settings.GMAIL_SENDER_EMAIL}>"
-        msg["To"] = settings.GMAIL_SENDER_EMAIL
-        msg["Reply-To"] = email
-
-        plain_text = (
-            f"Nuevo mensaje de contacto\n\n"
-            f"De: {name} <{email}>\n\n"
-            f"Mensaje:\n{message}\n"
+      if not sender_email or not smtp_password:
+        logger.error(
+          "SMTP_SENDER_EMAIL/SMTP_PASSWORD (o GMAIL_SENDER_EMAIL/GMAIL_APP_PASSWORD) "
+          "no estan configurados. El email de contacto no pudo ser enviado."
         )
-        msg.attach(MIMEText(plain_text, "plain", "utf-8"))
-        msg.attach(MIMEText(self._build_contact_html(name, email, message), "html", "utf-8"))
+        return False
 
-        try:
-            with smtplib.SMTP(self.GMAIL_SMTP_HOST, self.GMAIL_SMTP_PORT) as smtp:
-                smtp.ehlo()
-                smtp.starttls()
-                smtp.ehlo()
-                smtp.login(settings.GMAIL_SENDER_EMAIL, settings.GMAIL_APP_PASSWORD)
-                smtp.sendmail(
-                    settings.GMAIL_SENDER_EMAIL,
-                    settings.GMAIL_SENDER_EMAIL,
-                    msg.as_string(),
-                )
-            logger.info("Email de contacto recibido de %s <%s>", name, email)
-            return True
-        except smtplib.SMTPAuthenticationError:
-            logger.error(
-                "Fallo de autenticación SMTP. Verifica GMAIL_SENDER_EMAIL y GMAIL_APP_PASSWORD."
-            )
-            return False
-        except smtplib.SMTPException as exc:
-            logger.error("Error SMTP al enviar email de contacto: %s", exc)
-            return False
-        except OSError as exc:
-            logger.error("Error de red al conectar con Gmail SMTP: %s", exc)
-            return False
+      msg = MIMEMultipart("alternative")
+      msg["Subject"] = f"Nuevo mensaje de contacto de {name}"
+      msg["From"] = f"Portfolio API <{sender_email}>"
+      msg["To"] = sender_email
+      msg["Reply-To"] = email
+
+      plain_text = (
+        f"Nuevo mensaje de contacto\n\n"
+        f"De: {name} <{email}>\n\n"
+        f"Mensaje:\n{message}\n"
+      )
+      msg.attach(MIMEText(plain_text, "plain", "utf-8"))
+      msg.attach(MIMEText(self._build_contact_html(name, email, message), "html", "utf-8"))
+
+      try:
+        with self._smtp_client() as smtp:
+          smtp.ehlo()
+          if settings.SMTP_USE_TLS and not settings.SMTP_USE_SSL:
+            smtp.starttls()
+            smtp.ehlo()
+          smtp.login(sender_email, smtp_password)
+          smtp.sendmail(
+            sender_email,
+            sender_email,
+            msg.as_string(),
+          )
+        logger.info("Email de contacto recibido de %s <%s>", name, email)
+        return True
+      except smtplib.SMTPAuthenticationError:
+        logger.error(
+          "Fallo de autenticacion SMTP. Verifica credenciales y configuracion SMTP."
+        )
+        return False
+      except smtplib.SMTPException as exc:
+        logger.error("Error SMTP al enviar email de contacto: %s", exc)
+        return False
+      except OSError as exc:
+        logger.error("Error de red al conectar con SMTP: %s", exc)
+        return False
