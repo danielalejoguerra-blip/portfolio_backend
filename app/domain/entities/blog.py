@@ -45,3 +45,14 @@ class BlogPost:
 		if self.published_at is None:
 			return True
 		return self.published_at <= datetime.now(self.published_at.tzinfo)
+
+	@property
+	def status(self) -> str:
+		"""Derive publication status from visible and published_at fields."""
+		if not self.visible:
+			return "draft"
+		if self.published_at is not None:
+			now = datetime.now(self.published_at.tzinfo)
+			if self.published_at > now:
+				return "scheduled"
+		return "published"

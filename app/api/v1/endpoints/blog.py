@@ -3,6 +3,8 @@ Blog API endpoints.
 Public: GET endpoints (list, get by slug)
 Protected: POST, PUT, DELETE endpoints (require authentication)
 """
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps import get_blog_service, get_current_user, get_language, require_csrf
@@ -11,8 +13,10 @@ from app.domain.schemas.blog import (
 	BlogPostCreate,
 	BlogPostListResponse,
 	BlogPostRead,
+	BlogPostStatus,
 	BlogPostUpdate,
 )
+from app.infrastructure.realtime.socket_server import emit_blog_event
 from app.services.blog_service import BlogService
 
 router = APIRouter(prefix="/blog", tags=["blog"])
@@ -28,7 +32,7 @@ def _entity_to_read(post, lang: str = "es") -> dict:
 		"content": post.content,
 		"images": post.images,
 		"metadata": post.metadata.to_dict(),
-		"visible": post.visible,
+		"status": post.status,
 		"published_at": post.published_at,
 		"created_at": post.created_at,
 		"updated_at": post.updated_at,
@@ -37,6 +41,16 @@ def _entity_to_read(post, lang: str = "es") -> dict:
 		"lang": lang,
 	}
 	return resolve_translation(data, post.translations, lang, ["title", "description", "content"])
+
+
+def _status_to_db_fields(status_value: BlogPostStatus, published_at=None):
+	"""Translate API status into (visible, published_at) for the DB layer."""
+	if status_value == BlogPostStatus.draft:
+		return False, None
+	if status_value == BlogPostStatus.published:
+		return True, datetime.now(timezone.utc)
+	# scheduled
+	return True, published_at
 
 
 # ============================================================================
@@ -121,12 +135,13 @@ def get_post_by_id_admin(
 
 
 @router.post("", response_model=BlogPostRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_csrf)])
-def create_post(
+async def create_post(
 	payload: BlogPostCreate,
 	_current_user=Depends(get_current_user),
 	service: BlogService = Depends(get_blog_service),
 ):
 	"""Create a new blog post (admin only)"""
+	visible, published_at = _status_to_db_fields(payload.status, payload.published_at)
 	post = service.create_post(
 		title=payload.title,
 		slug=payload.slug,
@@ -134,21 +149,39 @@ def create_post(
 		content=payload.content,
 		images=payload.images,
 		metadata=payload.metadata,
-		visible=payload.visible,
-		published_at=payload.published_at,
+		visible=visible,
+		published_at=published_at,
 		translations=payload.translations,
 	)
-	return _entity_to_read(post, lang="es")
+	data = _entity_to_read(post, lang="es")
+	await emit_blog_event("blog:created", data)
+	if post.status == "published":
+		await emit_blog_event("blog:published", data)
+	elif post.status == "scheduled":
+		await emit_blog_event("blog:scheduled", data)
+	return data
 
 
 @router.put("/{post_id}", response_model=BlogPostRead, dependencies=[Depends(require_csrf)])
-def update_post(
+async def update_post(
 	post_id: int,
 	payload: BlogPostUpdate,
 	_current_user=Depends(get_current_user),
 	service: BlogService = Depends(get_blog_service),
 ):
 	"""Update an existing blog post (admin only)"""
+	# Resolve visible/published_at from status if provided
+	visible = None
+	published_at = payload.published_at
+	if payload.status is not None:
+		visible, published_at = _status_to_db_fields(payload.status, payload.published_at)
+
+	# Fetch previous status to detect transitions
+	existing = service.get_post_by_id(post_id)
+	if not existing:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+	previous_status = existing.status
+
 	try:
 		post = service.update_post(
 			post_id=post_id,
@@ -158,8 +191,8 @@ def update_post(
 			content=payload.content,
 			images=payload.images,
 			metadata=payload.metadata,
-			visible=payload.visible,
-			published_at=payload.published_at,
+			visible=visible,
+			published_at=published_at,
 			translations=payload.translations,
 		)
 	except ValueError as e:
@@ -169,11 +202,18 @@ def update_post(
 
 	if not post:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
-	return _entity_to_read(post, lang="es")
+
+	data = _entity_to_read(post, lang="es")
+	await emit_blog_event("blog:updated", data)
+	if post.status == "published" and previous_status != "published":
+		await emit_blog_event("blog:published", data)
+	elif post.status == "scheduled" and previous_status != "scheduled":
+		await emit_blog_event("blog:scheduled", data)
+	return data
 
 
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_csrf)])
-def delete_post(
+async def delete_post(
 	post_id: int,
 	hard: bool = Query(default=False, description="Permanently delete instead of soft delete"),
 	_current_user=Depends(get_current_user),
@@ -183,10 +223,11 @@ def delete_post(
 	deleted = service.delete_post(post_id, soft=not hard)
 	if not deleted:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+	await emit_blog_event("blog:deleted", {"id": post_id, "hard": hard})
 
 
 @router.post("/{post_id}/restore", response_model=BlogPostRead, dependencies=[Depends(require_csrf)])
-def restore_post(
+async def restore_post(
 	post_id: int,
 	_current_user=Depends(get_current_user),
 	service: BlogService = Depends(get_blog_service),
@@ -195,4 +236,6 @@ def restore_post(
 	post = service.restore_post(post_id)
 	if not post:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
-	return _entity_to_read(post, lang="es")
+	data = _entity_to_read(post, lang="es")
+	await emit_blog_event("blog:restored", data)
+	return data
