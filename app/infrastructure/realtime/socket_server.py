@@ -13,6 +13,9 @@ from app.infrastructure.repositories.user_repository_impl import UserRepositoryI
 analytics_namespace = settings.SOCKETIO_NAMESPACE_ANALYTICS
 analytics_room = settings.SOCKETIO_ANALYTICS_ROOM
 
+blog_namespace = settings.SOCKETIO_NAMESPACE_BLOG
+blog_room = settings.SOCKETIO_BLOG_ROOM
+
 
 def _build_manager() -> Optional[socketio.AsyncRedisManager]:
 	if not settings.SOCKETIO_REDIS_URL:
@@ -79,6 +82,44 @@ async def connect(sid: str, environ: dict[str, Any], auth: Optional[dict[str, An
 @socket_server.event(namespace=analytics_namespace)
 async def disconnect(sid: str):
 	await socket_server.leave_room(sid, analytics_room, namespace=analytics_namespace)
+
+
+# ── Blog namespace (authenticated admin only) ─────────────────────────────────
+
+@socket_server.event(namespace=blog_namespace)
+async def connect(sid: str, environ: dict[str, Any], auth: Optional[dict[str, Any]]):  # noqa: F811
+	_ = auth
+	user = _get_authenticated_user(environ)
+	if not user:
+		return False
+
+	await socket_server.save_session(sid, {"user_id": user.id}, namespace=blog_namespace)
+	await socket_server.enter_room(sid, blog_room, namespace=blog_namespace)
+	return True
+
+
+@socket_server.event(namespace=blog_namespace)
+async def disconnect(sid: str):  # noqa: F811
+	await socket_server.leave_room(sid, blog_room, namespace=blog_namespace)
+
+
+async def emit_blog_event(event: str, payload: dict[str, Any]) -> None:
+	"""Emit a blog event to all authenticated admin clients.
+
+	Events emitted:
+	  - ``blog:created``   – A new post was created.
+	  - ``blog:updated``   – An existing post was updated.
+	  - ``blog:deleted``   – A post was (soft-)deleted.
+	  - ``blog:restored``  – A soft-deleted post was restored.
+	  - ``blog:published`` – Post status transitioned to *published*.
+	  - ``blog:scheduled`` – Post status set to *scheduled*.
+	"""
+	await socket_server.emit(
+		event,
+		payload,
+		namespace=blog_namespace,
+		room=blog_room,
+	)
 
 
 async def emit_analytics_updates(
