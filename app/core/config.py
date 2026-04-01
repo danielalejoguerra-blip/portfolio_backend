@@ -36,6 +36,8 @@ class Settings(BaseSettings):
 	SOCKETIO_PATH: str = "socket.io"
 	SOCKETIO_NAMESPACE_ANALYTICS: str = "/analytics"
 	SOCKETIO_ANALYTICS_ROOM: str = "analytics_admin"
+	SOCKETIO_NAMESPACE_BLOG: str = "/blog"
+	SOCKETIO_BLOG_ROOM: str = "blog_admin"
 	SOCKETIO_REDIS_URL: Optional[str] = None
 
 	ANALYTICS_REALTIME_DAYS: int = 30

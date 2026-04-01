@@ -2,9 +2,22 @@
 Blog Pydantic schemas for request/response validation.
 """
 from datetime import datetime
+from enum import Enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+
+class BlogPostStatus(str, Enum):
+	"""Publication status of a blog post.
+
+	- draft:     Not visible in the public site.
+	- published: Visible immediately.
+	- scheduled: Will be published at the indicated date (published_at).
+	"""
+	draft = "draft"
+	published = "published"
+	scheduled = "scheduled"
 
 
 class BlogPostCreate(BaseModel):
@@ -15,9 +28,15 @@ class BlogPostCreate(BaseModel):
 	content: Optional[str] = None
 	images: list[str] = Field(default_factory=list)
 	metadata: dict[str, Any] = Field(default_factory=dict)
-	visible: bool = True
-	published_at: Optional[datetime] = None  # None = publish immediately
+	status: BlogPostStatus = BlogPostStatus.draft
+	published_at: Optional[datetime] = None  # Required when status=scheduled
 	translations: dict[str, dict[str, str]] = Field(default_factory=dict)
+
+	@model_validator(mode="after")
+	def validate_scheduled(self) -> "BlogPostCreate":
+		if self.status == BlogPostStatus.scheduled and not self.published_at:
+			raise ValueError("published_at is required when status is 'scheduled'")
+		return self
 
 
 class BlogPostUpdate(BaseModel):
@@ -28,9 +47,15 @@ class BlogPostUpdate(BaseModel):
 	content: Optional[str] = None
 	images: Optional[list[str]] = None
 	metadata: Optional[dict[str, Any]] = None
-	visible: Optional[bool] = None
-	published_at: Optional[datetime] = None
+	status: Optional[BlogPostStatus] = None
+	published_at: Optional[datetime] = None  # Required when status=scheduled
 	translations: Optional[dict[str, dict[str, str]]] = None
+
+	@model_validator(mode="after")
+	def validate_scheduled(self) -> "BlogPostUpdate":
+		if self.status == BlogPostStatus.scheduled and not self.published_at:
+			raise ValueError("published_at is required when status is 'scheduled'")
+		return self
 
 
 class BlogPostRead(BaseModel):
@@ -42,7 +67,7 @@ class BlogPostRead(BaseModel):
 	content: Optional[str] = None
 	images: list[str] = Field(default_factory=list)
 	metadata: dict[str, Any] = Field(default_factory=dict)
-	visible: bool
+	status: BlogPostStatus = BlogPostStatus.draft
 	published_at: Optional[datetime] = None
 	created_at: datetime
 	updated_at: datetime
