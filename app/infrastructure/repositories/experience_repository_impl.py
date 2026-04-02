@@ -24,10 +24,25 @@ class ExperienceRepositoryImpl(ExperienceRepository):
 			slug=model.slug,
 			description=model.description,
 			content=model.content,
+			company=model.company or "",
+			company_url=model.company_url,
+			company_logo_url=model.company_logo_url,
+			location=model.location,
+			employment_type=model.employment_type or "full_time",
+			work_mode=model.work_mode,
+			department=model.department,
+			start_date=model.start_date,
+			end_date=model.end_date,
+			is_current=model.is_current or False,
+			tech_stack=model.tech_stack or [],
+			responsibilities=model.responsibilities or [],
+			achievements=model.achievements or [],
+			related_projects=model.related_projects or [],
+			references=model.references or [],
 			images=model.images or [],
-			metadata=ContentMetadata(data=model.meta or {}),
 			visible=model.visible,
 			order=model.order,
+			metadata=ContentMetadata(data=model.meta or {}),
 			created_at=model.created_at,
 			updated_at=model.updated_at,
 			deleted_at=model.deleted_at,
@@ -85,6 +100,21 @@ class ExperienceRepositoryImpl(ExperienceRepository):
 		slug: str,
 		description: Optional[str] = None,
 		content: Optional[str] = None,
+		company: str = "",
+		company_url: Optional[str] = None,
+		company_logo_url: Optional[str] = None,
+		location: Optional[str] = None,
+		employment_type: str = "full_time",
+		work_mode: Optional[str] = None,
+		department: Optional[str] = None,
+		start_date=None,
+		end_date=None,
+		is_current: bool = False,
+		tech_stack: Optional[list] = None,
+		responsibilities: Optional[list] = None,
+		achievements: Optional[list] = None,
+		related_projects: Optional[list] = None,
+		references: Optional[list] = None,
 		images: Optional[list[str]] = None,
 		metadata: Optional[dict] = None,
 		visible: bool = True,
@@ -92,14 +122,14 @@ class ExperienceRepositoryImpl(ExperienceRepository):
 		translations: dict = None,
 	) -> Experience:
 		model = ExperienceModel(
-			title=title,
-			slug=slug,
-			description=description,
-			content=content,
-			images=images or [],
-			meta=metadata or {},
-			visible=visible,
-			order=order,
+			title=title, slug=slug, description=description, content=content,
+			company=company, company_url=company_url, company_logo_url=company_logo_url,
+			location=location, employment_type=employment_type, work_mode=work_mode,
+			department=department, start_date=start_date, end_date=end_date,
+			is_current=is_current, tech_stack=tech_stack or [],
+			responsibilities=responsibilities or [], achievements=achievements or [],
+			related_projects=related_projects or [], references=references or [],
+			images=images or [], meta=metadata or {}, visible=visible, order=order,
 			translations=translations or {},
 		)
 		self.db.add(model)
@@ -114,6 +144,21 @@ class ExperienceRepositoryImpl(ExperienceRepository):
 		slug: Optional[str] = None,
 		description: Optional[str] = None,
 		content: Optional[str] = None,
+		company: Optional[str] = None,
+		company_url: Optional[str] = None,
+		company_logo_url: Optional[str] = None,
+		location: Optional[str] = None,
+		employment_type: Optional[str] = None,
+		work_mode: Optional[str] = None,
+		department: Optional[str] = None,
+		start_date=None,
+		end_date=None,
+		is_current: Optional[bool] = None,
+		tech_stack: Optional[list] = None,
+		responsibilities: Optional[list] = None,
+		achievements: Optional[list] = None,
+		related_projects: Optional[list] = None,
+		references: Optional[list] = None,
 		images: Optional[list[str]] = None,
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
@@ -124,24 +169,22 @@ class ExperienceRepositoryImpl(ExperienceRepository):
 		if not model:
 			return None
 
-		if title is not None:
-			model.title = title
-		if slug is not None:
-			model.slug = slug
-		if description is not None:
-			model.description = description
-		if content is not None:
-			model.content = content
-		if images is not None:
-			model.images = images
+		for attr, val in [
+			("title", title), ("slug", slug), ("description", description), ("content", content),
+			("company", company), ("company_url", company_url),
+			("company_logo_url", company_logo_url), ("location", location),
+			("employment_type", employment_type), ("work_mode", work_mode),
+			("department", department), ("start_date", start_date), ("end_date", end_date),
+			("is_current", is_current), ("tech_stack", tech_stack),
+			("responsibilities", responsibilities), ("achievements", achievements),
+			("related_projects", related_projects), ("references", references),
+			("images", images), ("visible", visible), ("order", order),
+			("translations", translations),
+		]:
+			if val is not None:
+				setattr(model, attr, val)
 		if metadata is not None:
 			model.meta = metadata
-		if visible is not None:
-			model.visible = visible
-		if order is not None:
-			model.order = order
-		if translations is not None:
-			model.translations = translations
 
 		model.updated_at = datetime.now(timezone.utc)
 		self.db.commit()

@@ -24,10 +24,26 @@ class CourseRepositoryImpl(CourseRepository):
 			slug=model.slug,
 			description=model.description,
 			content=model.content,
+			is_certification=model.is_certification or False,
+			category=model.category,
+			level=model.level,
+			platform=model.platform,
+			platform_url=model.platform_url,
+			instructor=model.instructor,
+			instructor_url=model.instructor_url,
+			completion_date=model.completion_date,
+			expiration_date=model.expiration_date,
+			duration_hours=model.duration_hours,
+			credential_id=model.credential_id,
+			certificate_url=model.certificate_url,
+			certificate_image_url=model.certificate_image_url,
+			badge_url=model.badge_url,
+			skills_gained=model.skills_gained or [],
+			syllabus=model.syllabus or [],
 			images=model.images or [],
-			metadata=ContentMetadata(data=model.meta or {}),
 			visible=model.visible,
 			order=model.order,
+			metadata=ContentMetadata(data=model.meta or {}),
 			created_at=model.created_at,
 			updated_at=model.updated_at,
 			deleted_at=model.deleted_at,
@@ -85,6 +101,22 @@ class CourseRepositoryImpl(CourseRepository):
 		slug: str,
 		description: Optional[str] = None,
 		content: Optional[str] = None,
+		is_certification: bool = False,
+		category: Optional[str] = None,
+		level: Optional[str] = None,
+		platform: Optional[str] = None,
+		platform_url: Optional[str] = None,
+		instructor: Optional[str] = None,
+		instructor_url: Optional[str] = None,
+		completion_date=None,
+		expiration_date=None,
+		duration_hours: Optional[int] = None,
+		credential_id: Optional[str] = None,
+		certificate_url: Optional[str] = None,
+		certificate_image_url: Optional[str] = None,
+		badge_url: Optional[str] = None,
+		skills_gained: Optional[list] = None,
+		syllabus: Optional[list] = None,
 		images: Optional[list[str]] = None,
 		metadata: Optional[dict] = None,
 		visible: bool = True,
@@ -92,14 +124,16 @@ class CourseRepositoryImpl(CourseRepository):
 		translations: dict = None,
 	) -> Course:
 		model = CourseModel(
-			title=title,
-			slug=slug,
-			description=description,
-			content=content,
-			images=images or [],
-			meta=metadata or {},
-			visible=visible,
-			order=order,
+			title=title, slug=slug, description=description, content=content,
+			is_certification=is_certification, category=category, level=level,
+			platform=platform, platform_url=platform_url,
+			instructor=instructor, instructor_url=instructor_url,
+			completion_date=completion_date, expiration_date=expiration_date,
+			duration_hours=duration_hours, credential_id=credential_id,
+			certificate_url=certificate_url, certificate_image_url=certificate_image_url,
+			badge_url=badge_url, skills_gained=skills_gained or [],
+			syllabus=syllabus or [], images=images or [],
+			meta=metadata or {}, visible=visible, order=order,
 			translations=translations or {},
 		)
 		self.db.add(model)
@@ -114,6 +148,22 @@ class CourseRepositoryImpl(CourseRepository):
 		slug: Optional[str] = None,
 		description: Optional[str] = None,
 		content: Optional[str] = None,
+		is_certification: Optional[bool] = None,
+		category: Optional[str] = None,
+		level: Optional[str] = None,
+		platform: Optional[str] = None,
+		platform_url: Optional[str] = None,
+		instructor: Optional[str] = None,
+		instructor_url: Optional[str] = None,
+		completion_date=None,
+		expiration_date=None,
+		duration_hours: Optional[int] = None,
+		credential_id: Optional[str] = None,
+		certificate_url: Optional[str] = None,
+		certificate_image_url: Optional[str] = None,
+		badge_url: Optional[str] = None,
+		skills_gained: Optional[list] = None,
+		syllabus: Optional[list] = None,
 		images: Optional[list[str]] = None,
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
@@ -124,24 +174,22 @@ class CourseRepositoryImpl(CourseRepository):
 		if not model:
 			return None
 
-		if title is not None:
-			model.title = title
-		if slug is not None:
-			model.slug = slug
-		if description is not None:
-			model.description = description
-		if content is not None:
-			model.content = content
-		if images is not None:
-			model.images = images
+		for attr, val in [
+			("title", title), ("slug", slug), ("description", description), ("content", content),
+			("is_certification", is_certification), ("category", category), ("level", level),
+			("platform", platform), ("platform_url", platform_url),
+			("instructor", instructor), ("instructor_url", instructor_url),
+			("completion_date", completion_date), ("expiration_date", expiration_date),
+			("duration_hours", duration_hours), ("credential_id", credential_id),
+			("certificate_url", certificate_url), ("certificate_image_url", certificate_image_url),
+			("badge_url", badge_url), ("skills_gained", skills_gained),
+			("syllabus", syllabus), ("images", images),
+			("visible", visible), ("order", order), ("translations", translations),
+		]:
+			if val is not None:
+				setattr(model, attr, val)
 		if metadata is not None:
 			model.meta = metadata
-		if visible is not None:
-			model.visible = visible
-		if order is not None:
-			model.order = order
-		if translations is not None:
-			model.translations = translations
 
 		model.updated_at = datetime.now(timezone.utc)
 		self.db.commit()

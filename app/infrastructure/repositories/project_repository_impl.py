@@ -24,10 +24,26 @@ class ProjectRepositoryImpl(ProjectRepository):
 			slug=model.slug,
 			description=model.description,
 			content=model.content,
+			status=model.status or "completed",
+			category=model.category,
+			role=model.role,
+			start_date=model.start_date,
+			end_date=model.end_date,
+			team_size=model.team_size,
+			client=model.client,
+			tech_stack=model.tech_stack or [],
+			project_url=model.project_url,
+			repository_url=model.repository_url,
+			documentation_url=model.documentation_url,
+			case_study_url=model.case_study_url,
+			metrics=model.metrics or [],
+			features=model.features or [],
+			challenges=model.challenges or [],
 			images=model.images or [],
-			metadata=ContentMetadata(data=model.meta or {}),
+			featured=model.featured or False,
 			visible=model.visible,
 			order=model.order,
+			metadata=ContentMetadata(data=model.meta or {}),
 			created_at=model.created_at,
 			updated_at=model.updated_at,
 			deleted_at=model.deleted_at,
@@ -85,21 +101,39 @@ class ProjectRepositoryImpl(ProjectRepository):
 		slug: str,
 		description: Optional[str] = None,
 		content: Optional[str] = None,
+		status: str = "completed",
+		category: Optional[str] = None,
+		role: Optional[str] = None,
+		start_date=None,
+		end_date=None,
+		team_size: Optional[int] = None,
+		client: Optional[str] = None,
+		tech_stack: Optional[list] = None,
+		project_url: Optional[str] = None,
+		repository_url: Optional[str] = None,
+		documentation_url: Optional[str] = None,
+		case_study_url: Optional[str] = None,
+		metrics: Optional[list] = None,
+		features: Optional[list] = None,
+		challenges: Optional[list] = None,
 		images: Optional[list[str]] = None,
+		featured: bool = False,
 		metadata: Optional[dict] = None,
 		visible: bool = True,
 		order: int = 0,
 		translations: dict = None,
 	) -> Project:
 		model = ProjectModel(
-			title=title,
-			slug=slug,
-			description=description,
-			content=content,
-			images=images or [],
-			meta=metadata or {},
-			visible=visible,
-			order=order,
+			title=title, slug=slug, description=description, content=content,
+			status=status, category=category, role=role,
+			start_date=start_date, end_date=end_date,
+			team_size=team_size, client=client,
+			tech_stack=tech_stack or [],
+			project_url=project_url, repository_url=repository_url,
+			documentation_url=documentation_url, case_study_url=case_study_url,
+			metrics=metrics or [], features=features or [], challenges=challenges or [],
+			images=images or [], featured=featured,
+			meta=metadata or {}, visible=visible, order=order,
 			translations=translations or {},
 		)
 		self.db.add(model)
@@ -114,7 +148,23 @@ class ProjectRepositoryImpl(ProjectRepository):
 		slug: Optional[str] = None,
 		description: Optional[str] = None,
 		content: Optional[str] = None,
+		status: Optional[str] = None,
+		category: Optional[str] = None,
+		role: Optional[str] = None,
+		start_date=None,
+		end_date=None,
+		team_size: Optional[int] = None,
+		client: Optional[str] = None,
+		tech_stack: Optional[list] = None,
+		project_url: Optional[str] = None,
+		repository_url: Optional[str] = None,
+		documentation_url: Optional[str] = None,
+		case_study_url: Optional[str] = None,
+		metrics: Optional[list] = None,
+		features: Optional[list] = None,
+		challenges: Optional[list] = None,
 		images: Optional[list[str]] = None,
+		featured: Optional[bool] = None,
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
 		order: Optional[int] = None,
@@ -124,24 +174,22 @@ class ProjectRepositoryImpl(ProjectRepository):
 		if not model:
 			return None
 
-		if title is not None:
-			model.title = title
-		if slug is not None:
-			model.slug = slug
-		if description is not None:
-			model.description = description
-		if content is not None:
-			model.content = content
-		if images is not None:
-			model.images = images
+		for attr, val in [
+			("title", title), ("slug", slug), ("description", description), ("content", content),
+			("status", status), ("category", category), ("role", role),
+			("start_date", start_date), ("end_date", end_date),
+			("team_size", team_size), ("client", client),
+			("tech_stack", tech_stack), ("project_url", project_url),
+			("repository_url", repository_url), ("documentation_url", documentation_url),
+			("case_study_url", case_study_url), ("metrics", metrics),
+			("features", features), ("challenges", challenges),
+			("images", images), ("featured", featured),
+			("visible", visible), ("order", order), ("translations", translations),
+		]:
+			if val is not None:
+				setattr(model, attr, val)
 		if metadata is not None:
 			model.meta = metadata
-		if visible is not None:
-			model.visible = visible
-		if order is not None:
-			model.order = order
-		if translations is not None:
-			model.translations = translations
 
 		model.updated_at = datetime.now(timezone.utc)
 		self.db.commit()

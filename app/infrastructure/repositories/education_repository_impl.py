@@ -24,10 +24,24 @@ class EducationRepositoryImpl(EducationRepository):
 			slug=model.slug,
 			description=model.description,
 			content=model.content,
+			institution=model.institution or "",
+			institution_url=model.institution_url,
+			location=model.location,
+			degree_type=model.degree_type or "bachelor",
+			field_of_study=model.field_of_study,
+			start_date=model.start_date,
+			end_date=model.end_date,
+			credential_id=model.credential_id,
+			credential_url=model.credential_url,
+			grade=model.grade,
+			honors=model.honors,
+			relevant_coursework=model.relevant_coursework or [],
+			activities=model.activities or [],
+			achievements=model.achievements or [],
 			images=model.images or [],
-			metadata=ContentMetadata(data=model.meta or {}),
 			visible=model.visible,
 			order=model.order,
+			metadata=ContentMetadata(data=model.meta or {}),
 			created_at=model.created_at,
 			updated_at=model.updated_at,
 			deleted_at=model.deleted_at,
@@ -85,6 +99,20 @@ class EducationRepositoryImpl(EducationRepository):
 		slug: str,
 		description: Optional[str] = None,
 		content: Optional[str] = None,
+		institution: str = "",
+		institution_url: Optional[str] = None,
+		location: Optional[str] = None,
+		degree_type: str = "bachelor",
+		field_of_study: Optional[str] = None,
+		start_date=None,
+		end_date=None,
+		credential_id: Optional[str] = None,
+		credential_url: Optional[str] = None,
+		grade: Optional[str] = None,
+		honors: Optional[str] = None,
+		relevant_coursework: Optional[list] = None,
+		activities: Optional[list] = None,
+		achievements: Optional[list] = None,
 		images: Optional[list[str]] = None,
 		metadata: Optional[dict] = None,
 		visible: bool = True,
@@ -96,6 +124,20 @@ class EducationRepositoryImpl(EducationRepository):
 			slug=slug,
 			description=description,
 			content=content,
+			institution=institution,
+			institution_url=institution_url,
+			location=location,
+			degree_type=degree_type,
+			field_of_study=field_of_study,
+			start_date=start_date,
+			end_date=end_date,
+			credential_id=credential_id,
+			credential_url=credential_url,
+			grade=grade,
+			honors=honors,
+			relevant_coursework=relevant_coursework or [],
+			activities=activities or [],
+			achievements=achievements or [],
 			images=images or [],
 			meta=metadata or {},
 			visible=visible,
@@ -114,6 +156,20 @@ class EducationRepositoryImpl(EducationRepository):
 		slug: Optional[str] = None,
 		description: Optional[str] = None,
 		content: Optional[str] = None,
+		institution: Optional[str] = None,
+		institution_url: Optional[str] = None,
+		location: Optional[str] = None,
+		degree_type: Optional[str] = None,
+		field_of_study: Optional[str] = None,
+		start_date=None,
+		end_date=None,
+		credential_id: Optional[str] = None,
+		credential_url: Optional[str] = None,
+		grade: Optional[str] = None,
+		honors: Optional[str] = None,
+		relevant_coursework: Optional[list] = None,
+		activities: Optional[list] = None,
+		achievements: Optional[list] = None,
 		images: Optional[list[str]] = None,
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
@@ -124,24 +180,23 @@ class EducationRepositoryImpl(EducationRepository):
 		if not model:
 			return None
 
-		if title is not None:
-			model.title = title
-		if slug is not None:
-			model.slug = slug
-		if description is not None:
-			model.description = description
-		if content is not None:
-			model.content = content
-		if images is not None:
-			model.images = images
+		for attr, val in [
+			("title", title), ("slug", slug), ("description", description),
+			("content", content), ("institution", institution),
+			("institution_url", institution_url), ("location", location),
+			("degree_type", degree_type), ("field_of_study", field_of_study),
+			("start_date", start_date), ("end_date", end_date),
+			("credential_id", credential_id), ("credential_url", credential_url),
+			("grade", grade), ("honors", honors),
+			("relevant_coursework", relevant_coursework),
+			("activities", activities), ("achievements", achievements),
+			("images", images), ("visible", visible), ("order", order),
+			("translations", translations),
+		]:
+			if val is not None:
+				setattr(model, attr, val)
 		if metadata is not None:
 			model.meta = metadata
-		if visible is not None:
-			model.visible = visible
-		if order is not None:
-			model.order = order
-		if translations is not None:
-			model.translations = translations
 
 		model.updated_at = datetime.now(timezone.utc)
 		self.db.commit()
