@@ -24,10 +24,24 @@ class BlogRepositoryImpl(BlogRepository):
 			slug=model.slug,
 			description=model.description,
 			content=model.content,
+			content_blocks=model.content_blocks or [],
+			cover_image_url=model.cover_image_url,
+			cover_image_alt=model.cover_image_alt,
+			cover_image_position=model.cover_image_position or "center",
+			category=model.category,
+			tags=model.tags or [],
+			series=model.series,
+			series_order=model.series_order,
+			reading_time_minutes=model.reading_time_minutes,
+			featured=model.featured or False,
+			seo_title=model.seo_title,
+			seo_description=model.seo_description,
+			canonical_url=model.canonical_url,
+			og_image_url=model.og_image_url,
 			images=model.images or [],
-			metadata=ContentMetadata(data=model.meta or {}),
 			visible=model.visible,
 			published_at=model.published_at,
+			metadata=ContentMetadata(data=model.meta or {}),
 			created_at=model.created_at,
 			updated_at=model.updated_at,
 			deleted_at=model.deleted_at,
@@ -102,6 +116,20 @@ class BlogRepositoryImpl(BlogRepository):
 		slug: str,
 		description: Optional[str] = None,
 		content: Optional[str] = None,
+		content_blocks: Optional[list] = None,
+		cover_image_url: Optional[str] = None,
+		cover_image_alt: Optional[str] = None,
+		cover_image_position: str = "center",
+		category: Optional[str] = None,
+		tags: Optional[list] = None,
+		series: Optional[str] = None,
+		series_order: Optional[int] = None,
+		reading_time_minutes: Optional[int] = None,
+		featured: bool = False,
+		seo_title: Optional[str] = None,
+		seo_description: Optional[str] = None,
+		canonical_url: Optional[str] = None,
+		og_image_url: Optional[str] = None,
 		images: Optional[list[str]] = None,
 		metadata: Optional[dict] = None,
 		visible: bool = True,
@@ -109,14 +137,17 @@ class BlogRepositoryImpl(BlogRepository):
 		translations: dict = None,
 	) -> BlogPost:
 		model = BlogPostModel(
-			title=title,
-			slug=slug,
-			description=description,
-			content=content,
-			images=images or [],
-			meta=metadata or {},
-			visible=visible,
-			published_at=published_at,
+			title=title, slug=slug, description=description, content=content,
+			content_blocks=content_blocks or [],
+			cover_image_url=cover_image_url, cover_image_alt=cover_image_alt,
+			cover_image_position=cover_image_position,
+			category=category, tags=tags or [],
+			series=series, series_order=series_order,
+			reading_time_minutes=reading_time_minutes, featured=featured,
+			seo_title=seo_title, seo_description=seo_description,
+			canonical_url=canonical_url, og_image_url=og_image_url,
+			images=images or [], meta=metadata or {},
+			visible=visible, published_at=published_at,
 			translations=translations or {},
 		)
 		self.db.add(model)
@@ -131,6 +162,20 @@ class BlogRepositoryImpl(BlogRepository):
 		slug: Optional[str] = None,
 		description: Optional[str] = None,
 		content: Optional[str] = None,
+		content_blocks: Optional[list] = None,
+		cover_image_url: Optional[str] = None,
+		cover_image_alt: Optional[str] = None,
+		cover_image_position: Optional[str] = None,
+		category: Optional[str] = None,
+		tags: Optional[list] = None,
+		series: Optional[str] = None,
+		series_order: Optional[int] = None,
+		reading_time_minutes: Optional[int] = None,
+		featured: Optional[bool] = None,
+		seo_title: Optional[str] = None,
+		seo_description: Optional[str] = None,
+		canonical_url: Optional[str] = None,
+		og_image_url: Optional[str] = None,
 		images: Optional[list[str]] = None,
 		metadata: Optional[dict] = None,
 		visible: Optional[bool] = None,
@@ -141,24 +186,21 @@ class BlogRepositoryImpl(BlogRepository):
 		if not model:
 			return None
 
-		if title is not None:
-			model.title = title
-		if slug is not None:
-			model.slug = slug
-		if description is not None:
-			model.description = description
-		if content is not None:
-			model.content = content
-		if images is not None:
-			model.images = images
+		for attr, val in [
+			("title", title), ("slug", slug), ("description", description), ("content", content),
+			("content_blocks", content_blocks), ("cover_image_url", cover_image_url),
+			("cover_image_alt", cover_image_alt), ("cover_image_position", cover_image_position),
+			("category", category), ("tags", tags), ("series", series),
+			("series_order", series_order), ("reading_time_minutes", reading_time_minutes),
+			("featured", featured), ("seo_title", seo_title),
+			("seo_description", seo_description), ("canonical_url", canonical_url),
+			("og_image_url", og_image_url), ("images", images),
+			("visible", visible), ("published_at", published_at), ("translations", translations),
+		]:
+			if val is not None:
+				setattr(model, attr, val)
 		if metadata is not None:
 			model.meta = metadata
-		if visible is not None:
-			model.visible = visible
-		if published_at is not None:
-			model.published_at = published_at
-		if translations is not None:
-			model.translations = translations
 
 		model.updated_at = datetime.now(timezone.utc)
 		self.db.commit()
