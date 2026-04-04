@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # ── Base de datos ────────────────────────────────────────────────────────────
   postgres:
@@ -31,6 +29,7 @@ services:
 
   # ── API ──────────────────────────────────────────────────────────────────────
   api:
+    build: .
     image: ${DOCKER_IMAGE:-danielwar/portfolio-api}:${IMAGE_TAG:-latest}
     container_name: portfolio_api
     restart: always
