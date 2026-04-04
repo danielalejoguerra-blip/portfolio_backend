@@ -1,0 +1,34 @@
+# Control de versiones
+.git
+.gitignore
+
+# Entornos virtuales de Python
+.venv
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Variables de entorno locales
+.env
+.env.*
+!.env.example
+
+# Archivos de IDE
+.vscode
+.idea
+*.iml
+
+# Herramientas de desarrollo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+.coverage
+*.log
+
+# Docker archivos de override locales
+docker-compose.override.yml
