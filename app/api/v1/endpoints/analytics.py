@@ -147,6 +147,7 @@ def _infer_content_from_page_slug(
 
 def _event_to_read(event) -> dict:
 	"""Convert domain entity to response dict"""
+	created_at = event.created_at
 	return {
 		"id": event.id,
 		"event_type": event.event_type,
@@ -156,11 +157,13 @@ def _event_to_read(event) -> dict:
 		"referrer": event.referrer,
 		"country": event.country,
 		"metadata": event.metadata,
-		"created_at": event.created_at,
+		"created_at": created_at.isoformat() if created_at else None,
 	}
 
 
 def _summary_to_read(summary) -> dict:
+	period_start = summary.period_start
+	period_end = summary.period_end
 	return {
 		"total_page_views": summary.total_page_views,
 		"unique_visitors": summary.unique_visitors,
@@ -168,8 +171,8 @@ def _summary_to_read(summary) -> dict:
 		"top_referrers": summary.top_referrers,
 		"views_by_country": summary.views_by_country,
 		"views_by_date": summary.views_by_date,
-		"period_start": summary.period_start,
-		"period_end": summary.period_end,
+		"period_start": period_start.isoformat() if period_start else None,
+		"period_end": period_end.isoformat() if period_end else None,
 	}
 
 

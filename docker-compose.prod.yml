@@ -46,9 +46,10 @@ services:
       COOKIE_SECURE: "true"
       COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
       BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-[]}
-      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      SMTP_HOST: ${SMTP_HOST:-smtp.hostinger.com}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USE_SSL: ${SMTP_USE_SSL:-false}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
       SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
