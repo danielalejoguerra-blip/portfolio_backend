@@ -49,7 +49,7 @@ def _clear_auth_cookies(response: Response) -> None:
 	response.delete_cookie(key=settings.COOKIE_CSRF_NAME, domain=settings.COOKIE_DOMAIN, path=settings.COOKIE_PATH)
 
 
-@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_current_user)])
+@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_current_user), Depends(require_csrf)])
 def register_user(payload: UserCreate, service: UserService = Depends(get_user_service)):
 	try:
 		user = service.register_user(
