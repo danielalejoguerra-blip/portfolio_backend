@@ -1,9 +1,12 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from http.cookies import SimpleCookie
 from typing import Any, Optional
 
 import socketio
 from jose import JWTError
+
+logger = logging.getLogger(__name__)
 
 from app.core import security
 from app.core.config import settings
@@ -39,14 +42,17 @@ def _parse_access_token(environ: dict[str, Any]) -> Optional[str]:
 def _get_authenticated_user(environ: dict[str, Any]):
 	token = _parse_access_token(environ)
 	if not token:
+		logger.warning("Socket auth failed: no access_token cookie. HTTP_COOKIE=%s", environ.get("HTTP_COOKIE"))
 		return None
 
 	try:
 		payload = security.decode_token(token)
 		if payload.get("type") != "access":
+			logger.warning("Socket auth failed: token type is '%s', expected 'access'", payload.get("type"))
 			return None
 		user_id = int(payload.get("sub"))
-	except (JWTError, ValueError, TypeError):
+	except (JWTError, ValueError, TypeError) as e:
+		logger.warning("Socket auth failed: token decode error: %s", e)
 		return None
 
 	db = SessionLocal()
@@ -54,6 +60,7 @@ def _get_authenticated_user(environ: dict[str, Any]):
 		repository = UserRepositoryImpl(db)
 		user = repository.get_by_id(user_id)
 		if not user or not user.is_active:
+			logger.warning("Socket auth failed: user_id=%s not found or inactive", user_id)
 			return None
 		return user
 	finally:
@@ -173,6 +180,6 @@ def build_top_content_payload(items: list[dict[str, Any]], days: int) -> dict[st
 			}
 			for item in items
 		],
-		"period_start": start_date,
-		"period_end": end_date,
+		"period_start": start_date.isoformat(),
+		"period_end": end_date.isoformat(),
 	}
