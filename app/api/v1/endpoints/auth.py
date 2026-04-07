@@ -41,6 +41,7 @@ def _set_auth_cookies(response: Response, access_token: str, refresh_token: str,
 		path=settings.COOKIE_PATH,
 		max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
 	)
+	response.headers[settings.CSRF_HEADER_NAME] = csrf_token
 
 
 def _clear_auth_cookies(response: Response) -> None:
