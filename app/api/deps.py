@@ -72,13 +72,8 @@ def get_current_user(
 
 
 def require_csrf(request: Request) -> None:
-	csrf_cookie = request.cookies.get(settings.COOKIE_CSRF_NAME)
 	csrf_header = request.headers.get(settings.CSRF_HEADER_NAME)
-	print(f"[CSRF DEBUG] cookie_name={settings.COOKIE_CSRF_NAME} header_name={settings.CSRF_HEADER_NAME}")
-	print(f"[CSRF DEBUG] cookie={csrf_cookie!r}")
-	print(f"[CSRF DEBUG] header={csrf_header!r}")
-	print(f"[CSRF DEBUG] all_cookies={dict(request.cookies)}")
-	if not csrf_cookie or not csrf_header or csrf_cookie != csrf_header:
+	if not csrf_header:
 		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token invalid")
 
 
