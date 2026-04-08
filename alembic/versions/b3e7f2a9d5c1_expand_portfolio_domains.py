@@ -11,7 +11,6 @@ Create Date: 2026-04-02 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'b3e7f2a9d5c1'
@@ -39,9 +38,9 @@ def upgrade() -> None:
     op.add_column('education', sa.Column('grade', sa.String(50), nullable=True))
     op.add_column('education', sa.Column('honors', sa.String(255), nullable=True))
     # Academic extras (JSONB)
-    op.add_column('education', sa.Column('relevant_coursework', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
-    op.add_column('education', sa.Column('activities', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
-    op.add_column('education', sa.Column('achievements', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
+    op.add_column('education', sa.Column('relevant_coursework', sa.JSON(), nullable=False, server_default='[]'))
+    op.add_column('education', sa.Column('activities', sa.JSON(), nullable=False, server_default='[]'))
+    op.add_column('education', sa.Column('achievements', sa.JSON(), nullable=False, server_default='[]'))
     # Indexes
     op.create_index('ix_education_institution', 'education', ['institution'])
     op.create_index('ix_education_degree_type', 'education', ['degree_type'])
@@ -64,16 +63,16 @@ def upgrade() -> None:
     op.add_column('projects', sa.Column('team_size', sa.Integer(), nullable=True))
     op.add_column('projects', sa.Column('client', sa.String(255), nullable=True))
     # Tech stack (JSONB)
-    op.add_column('projects', sa.Column('tech_stack', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
+    op.add_column('projects', sa.Column('tech_stack', sa.JSON(), nullable=False, server_default='[]'))
     # Links
     op.add_column('projects', sa.Column('project_url', sa.String(2048), nullable=True))
     op.add_column('projects', sa.Column('repository_url', sa.String(2048), nullable=True))
     op.add_column('projects', sa.Column('documentation_url', sa.String(2048), nullable=True))
     op.add_column('projects', sa.Column('case_study_url', sa.String(2048), nullable=True))
     # Highlights (JSONB)
-    op.add_column('projects', sa.Column('metrics', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
-    op.add_column('projects', sa.Column('features', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
-    op.add_column('projects', sa.Column('challenges', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
+    op.add_column('projects', sa.Column('metrics', sa.JSON(), nullable=False, server_default='[]'))
+    op.add_column('projects', sa.Column('features', sa.JSON(), nullable=False, server_default='[]'))
+    op.add_column('projects', sa.Column('challenges', sa.JSON(), nullable=False, server_default='[]'))
     # Display
     op.add_column('projects', sa.Column('featured', sa.Boolean(), nullable=False, server_default='false'))
     # Indexes
@@ -92,14 +91,14 @@ def upgrade() -> None:
     # blog_posts
     # -------------------------------------------------------------------------
     # Structured content
-    op.add_column('blog_posts', sa.Column('content_blocks', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
+    op.add_column('blog_posts', sa.Column('content_blocks', sa.JSON(), nullable=False, server_default='[]'))
     # Cover image
     op.add_column('blog_posts', sa.Column('cover_image_url', sa.String(2048), nullable=True))
     op.add_column('blog_posts', sa.Column('cover_image_alt', sa.String(255), nullable=True))
     op.add_column('blog_posts', sa.Column('cover_image_position', sa.String(20), nullable=False, server_default='center'))
     # Classification
     op.add_column('blog_posts', sa.Column('category', sa.String(100), nullable=True))
-    op.add_column('blog_posts', sa.Column('tags', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
+    op.add_column('blog_posts', sa.Column('tags', sa.JSON(), nullable=False, server_default='[]'))
     op.add_column('blog_posts', sa.Column('series', sa.String(255), nullable=True))
     op.add_column('blog_posts', sa.Column('series_order', sa.Integer(), nullable=True))
     # Reading experience
@@ -142,8 +141,8 @@ def upgrade() -> None:
     op.add_column('courses', sa.Column('certificate_image_url', sa.String(2048), nullable=True))
     op.add_column('courses', sa.Column('badge_url', sa.String(2048), nullable=True))
     # Learning outcomes (JSONB)
-    op.add_column('courses', sa.Column('skills_gained', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
-    op.add_column('courses', sa.Column('syllabus', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
+    op.add_column('courses', sa.Column('skills_gained', sa.JSON(), nullable=False, server_default='[]'))
+    op.add_column('courses', sa.Column('syllabus', sa.JSON(), nullable=False, server_default='[]'))
     # Indexes
     op.create_index('ix_courses_is_certification', 'courses', ['is_certification'])
     op.create_index('ix_courses_category', 'courses', ['category'])
@@ -171,12 +170,12 @@ def upgrade() -> None:
     op.add_column('experiences', sa.Column('end_date', sa.Date(), nullable=True))
     op.add_column('experiences', sa.Column('is_current', sa.Boolean(), nullable=False, server_default='false'))
     # Tech stack & highlights (JSONB)
-    op.add_column('experiences', sa.Column('tech_stack', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
-    op.add_column('experiences', sa.Column('responsibilities', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
-    op.add_column('experiences', sa.Column('achievements', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
-    op.add_column('experiences', sa.Column('related_projects', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
+    op.add_column('experiences', sa.Column('tech_stack', sa.JSON(), nullable=False, server_default='[]'))
+    op.add_column('experiences', sa.Column('responsibilities', sa.JSON(), nullable=False, server_default='[]'))
+    op.add_column('experiences', sa.Column('achievements', sa.JSON(), nullable=False, server_default='[]'))
+    op.add_column('experiences', sa.Column('related_projects', sa.JSON(), nullable=False, server_default='[]'))
     # References (JSONB)
-    op.add_column('experiences', sa.Column('references', postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default='[]'))
+    op.add_column('experiences', sa.Column('references', sa.JSON(), nullable=False, server_default='[]'))
     # Indexes
     op.create_index('ix_experiences_company', 'experiences', ['company'])
     op.create_index('ix_experiences_employment_type', 'experiences', ['employment_type'])

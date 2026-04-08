@@ -8,7 +8,6 @@ Create Date: 2026-01-30 15:09:13.742342
 from alembic import op
 import sqlalchemy as sa
 
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'c4bfa0de6950'
@@ -29,7 +28,7 @@ def upgrade() -> None:
     sa.Column('user_agent', sa.Text(), nullable=True),
     sa.Column('ip_hash', sa.String(length=64), nullable=True),
     sa.Column('country', sa.String(length=2), nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('metadata', sa.JSON(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
@@ -47,8 +46,8 @@ def upgrade() -> None:
     sa.Column('slug', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=1000), nullable=True),
     sa.Column('content', sa.Text(), nullable=True),
-    sa.Column('images', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('images', sa.JSON(), nullable=False),
+    sa.Column('metadata', sa.JSON(), nullable=False),
     sa.Column('visible', sa.Boolean(), nullable=False),
     sa.Column('published_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
@@ -67,8 +66,8 @@ def upgrade() -> None:
     sa.Column('slug', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=1000), nullable=True),
     sa.Column('content', sa.Text(), nullable=True),
-    sa.Column('images', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('images', sa.JSON(), nullable=False),
+    sa.Column('metadata', sa.JSON(), nullable=False),
     sa.Column('visible', sa.Boolean(), nullable=False),
     sa.Column('order', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
@@ -87,8 +86,8 @@ def upgrade() -> None:
     sa.Column('slug', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=1000), nullable=True),
     sa.Column('content', sa.Text(), nullable=True),
-    sa.Column('images', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('images', sa.JSON(), nullable=False),
+    sa.Column('metadata', sa.JSON(), nullable=False),
     sa.Column('visible', sa.Boolean(), nullable=False),
     sa.Column('order', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
@@ -107,8 +106,8 @@ def upgrade() -> None:
     sa.Column('slug', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=1000), nullable=True),
     sa.Column('content', sa.Text(), nullable=True),
-    sa.Column('images', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('images', sa.JSON(), nullable=False),
+    sa.Column('metadata', sa.JSON(), nullable=False),
     sa.Column('visible', sa.Boolean(), nullable=False),
     sa.Column('order', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
@@ -127,8 +126,8 @@ def upgrade() -> None:
     sa.Column('slug', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=1000), nullable=True),
     sa.Column('content', sa.Text(), nullable=True),
-    sa.Column('images', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('images', sa.JSON(), nullable=False),
+    sa.Column('metadata', sa.JSON(), nullable=False),
     sa.Column('visible', sa.Boolean(), nullable=False),
     sa.Column('order', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),

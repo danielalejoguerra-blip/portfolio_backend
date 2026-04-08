@@ -8,7 +8,6 @@ Create Date: 2026-02-28 17:55:00.000000
 from alembic import op
 import sqlalchemy as sa
 
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'd2a91f7c6e4b'
@@ -25,7 +24,7 @@ def upgrade() -> None:
 		sa.Column('title', sa.String(length=255), nullable=False),
 		sa.Column('slug', sa.String(length=255), nullable=False),
 		sa.Column('description', sa.String(length=1000), nullable=True),
-		sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+		sa.Column('metadata', sa.JSON(), nullable=False),
 		sa.Column('visible', sa.Boolean(), nullable=False),
 		sa.Column('order', sa.Integer(), nullable=False),
 		sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),

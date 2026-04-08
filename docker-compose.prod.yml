@@ -42,7 +42,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       SOCKETIO_REDIS_URL: redis://redis:6379/0
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-api.danielwar.tech}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-.danielwar.tech}
       COOKIE_SECURE: "true"
       COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
       BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-[]}
