@@ -6,6 +6,7 @@ Protected: POST, PUT, DELETE endpoints (require authentication)
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.encoders import jsonable_encoder
 
 from app.api.deps import get_blog_service, get_current_user, get_language, require_csrf
 from app.core.i18n import resolve_translation
@@ -182,11 +183,12 @@ async def create_post(
 		translations=payload.translations,
 	)
 	data = _entity_to_read(post, lang="es")
-	await emit_blog_event("blog:created", data)
+	serializable = jsonable_encoder(data)
+	await emit_blog_event("blog:created", serializable)
 	if post.status == "published":
-		await emit_blog_event("blog:published", data)
+		await emit_blog_event("blog:published", serializable)
 	elif post.status == "scheduled":
-		await emit_blog_event("blog:scheduled", data)
+		await emit_blog_event("blog:scheduled", serializable)
 	return data
 
 
@@ -246,11 +248,12 @@ async def update_post(
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
 	data = _entity_to_read(post, lang="es")
-	await emit_blog_event("blog:updated", data)
+	serializable = jsonable_encoder(data)
+	await emit_blog_event("blog:updated", serializable)
 	if post.status == "published" and previous_status != "published":
-		await emit_blog_event("blog:published", data)
+		await emit_blog_event("blog:published", serializable)
 	elif post.status == "scheduled" and previous_status != "scheduled":
-		await emit_blog_event("blog:scheduled", data)
+		await emit_blog_event("blog:scheduled", serializable)
 	return data
 
 
@@ -279,5 +282,5 @@ async def restore_post(
 	if not post:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 	data = _entity_to_read(post, lang="es")
-	await emit_blog_event("blog:restored", data)
+	await emit_blog_event("blog:restored", jsonable_encoder(data))
 	return data
