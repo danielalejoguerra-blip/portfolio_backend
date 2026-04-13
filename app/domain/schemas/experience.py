@@ -221,5 +221,8 @@ class ExperienceListParams(BaseModel):
 
 class ExperienceListResponse(BaseModel):
 	"""Paginated experience list response."""
+	items: list[ExperienceRead]
+	total: int
+	limit: int
 	offset: int
 	has_more: bool
