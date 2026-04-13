@@ -772,4 +772,5 @@ MIT
 
 ## 👤 Autor
 
-Tu nombre
+Daniel Guerra
+
